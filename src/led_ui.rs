@@ -3,7 +3,7 @@
 use stdweb::traits::*;
 use stdweb::unstable::TryInto;
 use stdweb::web::{
-    document, event::ClickEvent, html_element::InputElement,
+    document, event::ClickEvent, HtmlElement, html_element::InputElement,
     INonElementParentNode,
 };
 
@@ -15,7 +15,7 @@ pub struct LedUi {
 
 impl LedUi {
     pub fn setup(&mut self) {
-        for range in &mut self.input_range_names {
+        for range in &self.input_range_names {
             let input: InputElement = document()
                 .get_element_by_id(&format!("input-range-{}", range))
                 .unwrap()

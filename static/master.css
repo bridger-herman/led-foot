@@ -25,3 +25,12 @@ input[type="range"] {
   width: calc(100% - 15px);
   margin: 10px;
 }
+
+.preview {
+  border: 2px solid white;
+  height: 10vh;
+}
+
+.preview * {
+  height: 50%;
+}
