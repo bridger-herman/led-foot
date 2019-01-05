@@ -3,9 +3,11 @@
 use stdweb::traits::*;
 use stdweb::unstable::TryInto;
 use stdweb::web::{
-    document, event::ClickEvent, HtmlElement, html_element::InputElement,
+    document, event::ChangeEvent, html_element::InputElement,
     INonElementParentNode,
 };
+
+use crate::color::Color;
 
 const DEFAULT_RANGES: [&str; 5] = ["red", "green", "blue", "white", "bright"];
 
@@ -21,13 +23,43 @@ impl LedUi {
                 .unwrap()
                 .try_into()
                 .unwrap();
-            let range_clone = range.clone();
-            input.add_event_listener(move |event: ClickEvent| {
-                let target: InputElement =
-                    event.target().unwrap().try_into().unwrap();
+            input.set_raw_value(&format!("{}", u8::default()));
+            input.add_event_listener(move |_event: ChangeEvent| {
+                let mut color = Color::default();
+                let range: InputElement = document()
+                    .get_element_by_id("input-range-red")
+                    .unwrap()
+                    .try_into()
+                    .unwrap();
                 js! {
-                    console.log(@{&range_clone} + @{target.raw_value()});
+                    console.log(@{range.raw_value()});
                 }
+                color.r = range.raw_value().parse::<u8>().unwrap();
+                let range: InputElement = document()
+                    .get_element_by_id("input-range-green")
+                    .unwrap()
+                    .try_into()
+                    .unwrap();
+                color.g = range.raw_value().parse::<u8>().unwrap();
+                let range: InputElement = document()
+                    .get_element_by_id("input-range-blue")
+                    .unwrap()
+                    .try_into()
+                    .unwrap();
+                color.b = range.raw_value().parse::<u8>().unwrap();
+                let range: InputElement = document()
+                    .get_element_by_id("input-range-white")
+                    .unwrap()
+                    .try_into()
+                    .unwrap();
+                color.w = range.raw_value().parse::<u8>().unwrap();
+
+                js! {
+                    console.log("ranges: " + @{color.rgb_to_css()});
+                }
+
+                led_system!().set_color(&color);
+                led_system!().update();
             });
         }
     }
