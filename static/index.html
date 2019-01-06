@@ -1,27 +1,57 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
+  <meta charset="utf-8">
   <title>LED Control</title>
-  <link rel="stylesheet" href="/master.css">
+  <link href="/master.css"
+        rel="stylesheet">
 </head>
 <body>
   <div class="container preview">
     <div id="color-preview"></div>
     <div id="white-preview"></div>
   </div>
-  <div class="container">
-    <input style="background-color: #CC3737" min="0" max="255"
-        id="input-range-red" type="range">
-    <input style="background-color: #37CC37" min="0" max="255"
-        id="input-range-green" type="range">
-    <input style="background-color: #3737CC" min="0" max="255"
-        id="input-range-blue" type="range">
-    <input style="background-color: #FFF" min="0" max="255"
-        id="input-range-white" type="range">
-    <input style="background-color: #CC37CC" min="0" max="255"
-        id="input-range-bright" type="range">
+  <div class="container input-range-container">
+    <form id="solid-rgbw-input"
+          name="solid-rgbw-input">
+      <input id="input-range-red"
+            max="255"
+            min="0"
+            name="r"
+            style="background-color: #CC3737"
+            type="range"
+            value="0">
+      <input id="input-range-green"
+            max="255"
+            min="0"
+            name="g"
+            style="background-color: #37CC37"
+            type="range"
+            value="0">
+      <input id="input-range-blue"
+            max="255"
+            min="0"
+            name="b"
+            style="background-color: #3737CC"
+            type="range"
+            value="0">
+      <input id="input-range-white"
+            max="255"
+            min="0"
+            name="w"
+            style="background-color: #FFF"
+            type="range"
+            value="0">
+      <input id="input-range-bright"
+            max="255"
+            min="0"
+            style="background-color: #CC37CC"
+            type="range"
+            value="0">
+    </form>
   </div>
-  <script src="/led-foot.js"></script>
+  <script src=
+  "https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script> 
+  <script src="/index.js"></script>
 </body>
 </html>
