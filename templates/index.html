@@ -8,8 +8,12 @@
 </head>
 <body>
   <div class="container preview">
-    <div id="color-preview"></div>
-    <div id="white-preview"></div>
+    <div id="color-preview"
+      style="background-color: rgb({{ r }}, {{ g }}, {{ b }})">
+    </div>
+    <div id="white-preview"
+         style="background-color: rgb({{ w }}, {{ w }}, {{ w }})">
+    </div>
   </div>
   <div class="container input-range-container">
     <form id="solid-rgbw-input"
@@ -20,28 +24,28 @@
             name="r"
             style="background-color: #CC3737"
             type="range"
-            value="0">
+            value="{{ r }}">
       <input id="input-range-green"
             max="255"
             min="0"
             name="g"
             style="background-color: #37CC37"
             type="range"
-            value="0">
+            value="{{ g }}">
       <input id="input-range-blue"
             max="255"
             min="0"
             name="b"
             style="background-color: #3737CC"
             type="range"
-            value="0">
+            value="{{ b }}">
       <input id="input-range-white"
             max="255"
             min="0"
             name="w"
             style="background-color: #FFF"
             type="range"
-            value="0">
+            value="{{ w }}">
       <input id="input-range-bright"
             max="255"
             min="0"

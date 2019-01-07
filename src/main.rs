@@ -36,8 +36,14 @@ fn main() {
 
     server.utilize(StaticFilesHandler::new("static"));
 
+    // Render index.html with the current color values on the server
+    server.get("/", middleware! { |_, mut response|
+        println!("got here");
+        return response.render("templates/index.html", &led_system!().current_color);
+    });
+
     // Long polling API call for changing the current color preview
-    server.get("/api/get-rgbw", middleware!{ |_, mut response|
+    server.get("/api/get-rgbw", middleware! { |_, mut response|
         let returned =
             json::encode(&led_system!().current_color.clone())
                 .expect("Failed to encode color");
