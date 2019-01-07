@@ -9,6 +9,7 @@ extern crate serial;
 pub mod led_system;
 
 pub mod color;
+pub mod led_sequence;
 
 use std::sync::Mutex;
 use std::thread::sleep;
@@ -38,7 +39,6 @@ fn main() {
 
     // Render index.html with the current color values on the server
     server.get("/", middleware! { |_, mut response|
-        println!("got here");
         return response.render("templates/index.html", &led_system!().current_color);
     });
 
@@ -56,7 +56,7 @@ fn main() {
         } else {
             // ... Otherwise, wait until it changes
             while *last_color!() == led_system!().current_color {
-                sleep(Duration::from_millis(100));
+                sleep(Duration::from_millis(10));
             }
         }
         returned
@@ -71,8 +71,7 @@ fn main() {
             let blue = request.param("blue").unwrap().parse::<u8>().unwrap();
             let white = request.param("white").unwrap().parse::<u8>().unwrap();
 
-            led_system!().update(Color::new(red, green, blue, white));
-            led_system!().send_color();
+            led_system!().update(&Color::new(red, green, blue, white));
 
             response.set(StatusCode::Ok);
             format!("Setting color {} {} {} {}", red, green, blue, white)

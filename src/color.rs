@@ -1,3 +1,9 @@
+use std::ops::{Div, Sub};
+
+fn lerp_component(low: f32, high: f32, percent: f32) -> f32 {
+    (high - low) * percent + low
+}
+
 /// RGBW color
 #[derive(Clone, Debug, Default, PartialEq, RustcEncodable, RustcDecodable)]
 pub struct Color {
@@ -33,5 +39,72 @@ impl Color {
 impl From<&Color> for [u8; 5] {
     fn from(color: &Color) -> [u8; 5] {
         [0, color.r, color.g, color.b, color.w]
+    }
+}
+
+impl From<&FloatColor> for Color {
+    fn from(color: &FloatColor) -> Self {
+        Self {
+            r: color.r.round() as u8,
+            g: color.g.round() as u8,
+            b: color.b.round() as u8,
+            w: color.w.round() as u8,
+        }
+    }
+}
+
+#[derive(Clone, Debug, Default, PartialEq)]
+pub struct FloatColor {
+    pub r: f32,
+    pub g: f32,
+    pub b: f32,
+    pub w: f32,
+}
+
+impl FloatColor {
+    pub fn lerp(&self, other: &FloatColor, percent: f32) -> FloatColor {
+        Self {
+            r: lerp_component(self.r, other.r, percent),
+            g: lerp_component(self.g, other.g, percent),
+            b: lerp_component(self.b, other.b, percent),
+            w: lerp_component(self.w, other.w, percent),
+        }
+    }
+}
+
+impl From<&Color> for FloatColor {
+    fn from(color: &Color) -> Self {
+        Self {
+            r: f32::from(color.r),
+            g: f32::from(color.g),
+            b: f32::from(color.b),
+            w: f32::from(color.w),
+        }
+    }
+}
+
+impl Sub for FloatColor {
+    type Output = Self;
+
+    fn sub(self, other: Self) -> Self {
+        Self {
+            r: self.r - other.r,
+            g: self.g - other.g,
+            b: self.b - other.b,
+            w: self.w - other.w,
+        }
+    }
+}
+
+impl Div<f32> for FloatColor {
+    type Output = Self;
+
+    fn div(self, scalar: f32) -> Self {
+        Self {
+            r: self.r / scalar,
+            g: self.g / scalar,
+            b: self.b / scalar,
+            w: self.w / scalar,
+        }
     }
 }

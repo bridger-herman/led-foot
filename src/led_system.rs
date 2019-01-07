@@ -1,10 +1,12 @@
 use std::io::{Read, Write};
 use std::sync::Mutex;
+use std::thread::sleep;
 use std::time::Duration;
 
 use serial::{SerialPort, SystemPort};
 
 use crate::color::Color;
+use crate::led_sequence::LedSequence;
 
 #[macro_export]
 macro_rules! led_system {
@@ -25,6 +27,7 @@ lazy_static! {
 pub struct LedSystem {
     pub current_color: Color,
     pub serial: SystemPort,
+    pub current_sequence: Option<LedSequence>,
 }
 
 impl LedSystem {
@@ -35,6 +38,7 @@ impl LedSystem {
         Self {
             current_color: Color::default(),
             serial,
+            current_sequence: None,
         }
     }
 
@@ -61,23 +65,26 @@ impl LedSystem {
     }
 
     /// Updates the current color
-    pub fn update(&mut self, color: Color) {
-        self.current_color = color;
-    }
+    pub fn update(&mut self, color: &Color) {
+        self.current_sequence =
+            Some(LedSequence::from_color_lerp(&self.current_color, &color));
+        if let Some(ref mut seq) = self.current_sequence {
+            for (delay, color) in seq {
+                sleep(Duration::from_millis((delay * 1000.0) as u64));
+                self.current_color = color;
+                // Send the color
+                let write_bytes: [u8; 5] = <[u8; 5]>::from(&self.current_color);
+                self.serial
+                    .write_all(&write_bytes)
+                    .expect("Couldn't write color bytes");
 
-    /// Sends a color to the Arduino and awaits a response
-    pub fn send_color(&mut self) {
-        // Send the color
-        let write_bytes: [u8; 5] = <[u8; 5]>::from(&self.current_color);
-        self.serial
-            .write_all(&write_bytes)
-            .expect("Couldn't write color bytes");
-
-        // Receive confirmation bytes "C\r\n"
-        let mut read_buf: [u8; 3] = [0; 3];
-        self.serial
-            .read_exact(&mut read_buf)
-            .expect("Couldn't read confirmation");
+                // Receive confirmation bytes "C\r\n"
+                let mut read_buf: [u8; 3] = [0; 3];
+                self.serial
+                    .read_exact(&mut read_buf)
+                    .expect("Couldn't read confirmation");
+            }
+        }
     }
 }
 
@@ -90,6 +97,7 @@ impl Default for LedSystem {
                 serial.set_timeout(Duration::from_secs(2)).unwrap();
                 serial
             },
+            current_sequence: None,
         }
     }
 }
