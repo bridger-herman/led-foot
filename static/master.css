@@ -24,6 +24,7 @@ input[type="range"] {
   background: #111;
   width: calc(100% - 15px);
   margin: 10px;
+  height: 7vh;
 }
 
 .preview {
