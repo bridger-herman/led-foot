@@ -1,5 +1,5 @@
 /// RGBW color
-#[derive(Clone, Default, RustcEncodable, RustcDecodable)]
+#[derive(Clone, Debug, Default, PartialEq, RustcEncodable, RustcDecodable)]
 pub struct Color {
     pub r: u8,
     pub g: u8,
@@ -10,6 +10,13 @@ pub struct Color {
 impl Color {
     pub fn new(r: u8, g: u8, b: u8, w: u8) -> Self {
         Self { r, g, b, w }
+    }
+
+    pub fn update_clone(&mut self, reference: &Self) {
+        self.r = reference.r;
+        self.g = reference.g;
+        self.b = reference.b;
+        self.w = reference.w;
     }
 
     /// Returns a css string of the RGB components

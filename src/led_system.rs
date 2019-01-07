@@ -1,9 +1,25 @@
 use std::io::{Read, Write};
+use std::sync::Mutex;
 use std::time::Duration;
 
 use serial::{SerialPort, SystemPort};
 
 use crate::color::Color;
+
+#[macro_export]
+macro_rules! led_system {
+    () => {
+        crate::led_system::LED_SYSTEM.lock().unwrap()
+    };
+}
+
+lazy_static! {
+    pub static ref LED_SYSTEM: Mutex<LedSystem> = Mutex::new({
+        let mut system = LedSystem::default();
+        system.setup();
+        system
+    });
+}
 
 /// Controls the RGBW LEDs
 pub struct LedSystem {
@@ -62,5 +78,18 @@ impl LedSystem {
         self.serial
             .read_exact(&mut read_buf)
             .expect("Couldn't read confirmation");
+    }
+}
+
+impl Default for LedSystem {
+    fn default() -> Self {
+        Self {
+            current_color: Color::default(),
+            serial: {
+                let mut serial = serial::open("/dev//ttyACM0").unwrap();
+                serial.set_timeout(Duration::from_secs(2)).unwrap();
+                serial
+            },
+        }
     }
 }

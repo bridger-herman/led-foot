@@ -1,5 +1,21 @@
-function longPollColor() {
-
+// Long polling function for checking to see if the current color has been
+// updated
+function updatePreviewFromServer(color) {
+  $.ajax({
+    type: 'GET',
+    url: '/api/get-rgbw',
+    success: function(info) {
+      let rgb = `rgb(${info.r}, ${info.g}, ${info.b})`;
+      let w = `rgb(${info.w}, ${info.w}, ${info.w})`;
+      $('#color-preview').css("background-color", rgb);
+      $('#white-preview').css("background-color", w);
+      updatePreviewFromServer(info);
+    },
+    error: function(response) {
+      console.log('Error!');
+      console.log(response);
+    },
+  });
 }
 
 function setup() {
@@ -12,17 +28,7 @@ function setup() {
   });
 
   // Grab the current color from the server every time it's updated
-  $.ajax({
-    type: 'GET',
-    url: '/api/get-rgbw',
-    success: function() {
-      console.log('Success!');
-    },
-    error: function(response) {
-      console.log('Error!');
-      console.log(response);
-    },
-  });
+  updatePreviewFromServer();
 }
 
 window.onload = setup;

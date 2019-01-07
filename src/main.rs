@@ -1,25 +1,60 @@
 #[macro_use]
+extern crate lazy_static;
+#[macro_use]
 extern crate nickel;
 extern crate rustc_serialize;
 extern crate serial;
 
-pub mod color;
+#[macro_use]
 pub mod led_system;
 
-use std::sync::{Arc, Mutex};
+pub mod color;
 
+use std::sync::Mutex;
+use std::thread::sleep;
+use std::time::Duration;
+
+use nickel::mimes::MediaType;
 use nickel::status::StatusCode;
 use nickel::{HttpRouter, Nickel, StaticFilesHandler};
+use rustc_serialize::json;
 
 use crate::color::Color;
-use crate::led_system::LedSystem;
+
+macro_rules! last_color {
+    () => {
+        LAST_COLOR.try_lock().unwrap()
+    };
+}
+
+lazy_static! {
+    pub static ref LAST_COLOR: Mutex<Color> = Mutex::new(Color::default());
+}
 
 fn main() {
     let mut server = Nickel::new();
-    let led_system = Arc::new(Mutex::new(LedSystem::new("/dev/ttyACM0")));
-    led_system.try_lock().unwrap().setup();
 
     server.utilize(StaticFilesHandler::new("static"));
+
+    // Long polling API call for changing the current color preview
+    server.get("/api/get-rgbw", middleware!{ |_, mut response|
+        let returned =
+            json::encode(&led_system!().current_color.clone())
+                .expect("Failed to encode color");
+        response.set(StatusCode::Ok);
+        response.set(MediaType::Json);
+
+        // If the color is different, update it...
+        if *last_color!() != led_system!().current_color.clone() {
+            last_color!().update_clone(&led_system!().current_color.clone());
+        } else {
+            // ... Otherwise, wait until it changes
+            while *last_color!() == led_system!().current_color {
+                sleep(Duration::from_millis(100));
+            }
+        }
+        returned
+    });
 
     server.post(
         "/api/set-rgbw-r=:red&g=:green&b=:blue&w=:white",
@@ -30,9 +65,8 @@ fn main() {
             let blue = request.param("blue").unwrap().parse::<u8>().unwrap();
             let white = request.param("white").unwrap().parse::<u8>().unwrap();
 
-            let mut led_sys = led_system.try_lock().unwrap();
-            led_sys.update(Color::new(red, green, blue, white));
-            led_sys.send_color();
+            led_system!().update(Color::new(red, green, blue, white));
+            led_system!().send_color();
 
             response.set(StatusCode::Ok);
             format!("Setting color {} {} {} {}", red, green, blue, white)
