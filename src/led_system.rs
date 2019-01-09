@@ -1,4 +1,5 @@
 use std::io::{Read, Write};
+use std::path::Path;
 use std::sync::Mutex;
 use std::thread::sleep;
 use std::time::Duration;
@@ -68,9 +69,21 @@ impl LedSystem {
     }
 
     /// Updates the current color
-    pub fn update(&mut self, color: &Color) {
+    pub fn update_color(&mut self, color: &Color) {
         self.current_sequence =
             Some(LedSequence::from_color_lerp(&self.current_color, &color));
+    }
+
+    /// Updates the current sequence directly
+    pub fn update_sequence(&mut self, sequence_path: &str) {
+        self.current_sequence = Some(LedSequence::from_png(
+            &self.current_color,
+            Path::new(sequence_path),
+        ));
+    }
+
+    /// Runs through the current LED sequence
+    pub fn run_sequence(&mut self) {
         if let Some(ref mut seq) = self.current_sequence {
             for (delay, color) in seq {
                 sleep(Duration::from_millis((delay * 1000.0) as u64));

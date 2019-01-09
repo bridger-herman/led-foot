@@ -42,6 +42,18 @@ impl From<&Color> for [u8; 5] {
     }
 }
 
+impl From<&[u8]> for Color {
+    fn from(bytes: &[u8]) -> Self {
+        assert!(bytes.len() > 2);
+        Self {
+            r: bytes[0],
+            g: bytes[1],
+            b: bytes[2],
+            w: 0,
+        }
+    }
+}
+
 impl From<&FloatColor> for Color {
     fn from(color: &FloatColor) -> Self {
         Self {

@@ -2,6 +2,7 @@
 extern crate lazy_static;
 #[macro_use]
 extern crate nickel;
+extern crate png;
 extern crate rustc_serialize;
 extern crate serial;
 
@@ -71,10 +72,19 @@ fn main() {
             let blue = request.param("blue").unwrap().parse::<u8>().unwrap();
             let white = request.param("white").unwrap().parse::<u8>().unwrap();
 
-            led_system!().update(&Color::new(red, green, blue, white));
+            led_system!().update_color(&Color::new(red, green, blue, white));
+            led_system!().run_sequence();
 
             response.set(StatusCode::Ok);
             format!("Setting color {} {} {} {}", red, green, blue, white)
+        },
+    );
+
+    server.post(
+        "/api/set-sequence",
+        middleware! { |_, mut response|
+            led_system!().update_sequence("sequences/color_reading.png");
+            led_system!().run_sequence();
         },
     );
 
