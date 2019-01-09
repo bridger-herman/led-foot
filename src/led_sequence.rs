@@ -135,12 +135,19 @@ impl LedSequence {
                     colors.push_back(color_i);
                     delays.push_back(delay);
                 }
-                let sequence = Self {
-                    colors,
-                    delays,
-                };
-                sequence
+                let sequence = Self { colors, delays };
+                initial_fade.chain(sequence)
             }
+        }
+    }
+
+    /// Chain two LED sequences together, consuming both
+    fn chain(mut self, other: LedSequence) -> Self {
+        self.colors.extend(other.colors);
+        self.delays.extend(other.delays);
+        Self {
+            colors: self.colors,
+            delays: self.delays,
         }
     }
 }
