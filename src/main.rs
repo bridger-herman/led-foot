@@ -12,6 +12,7 @@ pub mod led_system;
 pub mod color;
 pub mod led_sequence;
 
+use std::collections::HashMap;
 use std::sync::Mutex;
 use std::thread::sleep;
 use std::time::Duration;
@@ -39,9 +40,15 @@ fn main() {
     server.utilize(StaticFilesHandler::new("static"));
 
     // Render index.html with the current color values on the server
-    server.get("/", middleware! { |_, mut response|
-        return response.render("templates/index.html", &led_system!().current_color);
-    });
+    server.get(
+        "/",
+        middleware! { |_, mut response|
+            let current_color = &led_system!().current_color;
+            let mut template_data = HashMap::new();
+            template_data.insert("current_color", &current_color);
+            return response.render("templates/index.html", &template_data);
+        },
+    );
 
     // Long polling API call for changing the current color preview
     server.get("/api/get-rgbw", middleware! { |_, mut response|
@@ -88,8 +95,5 @@ fn main() {
         },
     );
 
-    led_system!().update_sequence("sequences/gradient_cools_20_repeat.png");
-    led_system!().run_sequence();
-
-    // server.listen("0.0.0.0:8000").expect("Failed to serve");
+    server.listen("0.0.0.0:8000").expect("Failed to serve");
 }
