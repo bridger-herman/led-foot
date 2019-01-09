@@ -83,10 +83,13 @@ fn main() {
     server.post(
         "/api/set-sequence",
         middleware! { |_, mut response|
-            led_system!().update_sequence("sequences/color_reading.png");
+            led_system!().update_sequence("sequences/gradient_cools_20_repeat.png");
             led_system!().run_sequence();
         },
     );
 
-    server.listen("0.0.0.0:8000").expect("Failed to serve");
+    led_system!().update_sequence("sequences/gradient_cools_20_repeat.png");
+    led_system!().run_sequence();
+
+    // server.listen("0.0.0.0:8000").expect("Failed to serve");
 }

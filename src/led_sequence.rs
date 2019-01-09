@@ -81,7 +81,7 @@ impl LedSequence {
         let tokens: Vec<_> = name.split('_').collect();
         assert!(tokens.len() > 1 && tokens.len() < 5);
 
-        let _info = if tokens[0] == "color" {
+        let info = if tokens[0] == "color" {
             assert_eq!(tokens.len(), 2);
             LedSequenceInfo {
                 sequence_type: LedSequenceType::Color,
@@ -109,12 +109,39 @@ impl LedSequence {
         let mut buf = vec![0; png_info.buffer_size()];
         reader.next_frame(&mut buf).unwrap();
 
-        let first_white = buf[3
+        let first_white_index = 3
             * png_info.width as usize
-            * (png_info.height as usize / 2) as usize];
-        let first_color = Color::new(buf[0], buf[1], buf[2], first_white);
+            * (png_info.height as usize / 2) as usize;
+        let first_color =
+            Color::new(buf[0], buf[1], buf[2], buf[first_white_index]);
 
-        Self::from_color_lerp(fade_from, &first_color)
+        let initial_fade = Self::from_color_lerp(fade_from, &first_color);
+
+        match info.sequence_type {
+            LedSequenceType::Color => initial_fade,
+            LedSequenceType::Gradient => {
+                let mut colors =
+                    VecDeque::with_capacity(png_info.width as usize);
+                let mut delays =
+                    VecDeque::with_capacity(png_info.width as usize);
+                let delay = (3.0 * info.duration) / png_info.width as f32;
+                for i in (0..(png_info.width as usize * 3)).step_by(3) {
+                    let color_i = Color::new(
+                        buf[i],
+                        buf[i + 1],
+                        buf[i + 2],
+                        buf[i + first_white_index],
+                    );
+                    colors.push_back(color_i);
+                    delays.push_back(delay);
+                }
+                let sequence = Self {
+                    colors,
+                    delays,
+                };
+                sequence
+            }
+        }
     }
 }
 
