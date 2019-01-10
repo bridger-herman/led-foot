@@ -34,6 +34,15 @@ impl Color {
     pub fn white_to_css(&self) -> String {
         format!("rgb({}, {}, {})", self.w, self.w, self.w)
     }
+
+    /// Check if any of the (r, g, b, w) contains a particular value
+    pub fn any_value<T: Into<u8>>(&self, value: T) -> bool {
+        let value_into_u8 = value.into();
+        value_into_u8 == self.r
+            || value_into_u8 == self.g
+            || value_into_u8 == self.b
+            || value_into_u8 == self.w
+    }
 }
 
 impl From<&Color> for [u8; 5] {

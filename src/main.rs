@@ -1,5 +1,6 @@
 #[macro_use]
 extern crate lazy_static;
+extern crate median;
 #[macro_use]
 extern crate nickel;
 extern crate png;

@@ -135,9 +135,25 @@ impl LedSequence {
                     colors.push_back(color_i);
                     delays.push_back(delay);
                 }
-                let sequence = Self { colors, delays };
+
+                let sequence = Self { colors, delays }.smooth_colors();
+                let initial_fade =
+                    Self::from_color_lerp(fade_from, &sequence.colors[0])
+                        .with_delay(delay);
+
                 initial_fade.chain(sequence)
             }
+        }
+    }
+
+    /// Overwrites the delays of this sequence to be `delay`, consuming self
+    ///
+    /// Useful for chaining on to the smoothed version of gradients loaded from
+    /// a file
+    pub fn with_delay(self, delay: f32) -> Self {
+        Self {
+            colors: self.colors,
+            delays: self.delays.iter().map(|_| delay).collect(),
         }
     }
 
@@ -147,6 +163,37 @@ impl LedSequence {
         self.delays.extend(other.delays);
         Self {
             colors: self.colors,
+            delays: self.delays,
+        }
+    }
+
+    /// Use a median filter to eliminate noise, consuming self
+    ///
+    /// Useful for gradients from png images, which tend to have noise
+    /// Also cuts out values <= 1 and makes them 0 to avoid color stuttering
+    fn smooth_colors(self) -> Self {
+        const FILTER_SIZE: usize = 51;
+        let mut r_filter = median::Filter::new(FILTER_SIZE);
+        let mut g_filter = median::Filter::new(FILTER_SIZE);
+        let mut b_filter = median::Filter::new(FILTER_SIZE);
+        let mut w_filter = median::Filter::new(FILTER_SIZE);
+
+        let mut new_colors = VecDeque::with_capacity(self.colors.len());
+        for color in self.colors {
+            let new_r = r_filter.consume(color.r);
+            let new_g = g_filter.consume(color.g);
+            let new_b = b_filter.consume(color.b);
+            let new_w = w_filter.consume(color.w);
+            new_colors.push_back(Color::new(new_r, new_g, new_b, new_w));
+        }
+
+        let new_colors_without_ones = new_colors
+            .into_iter()
+            .filter(|color| !color.any_value(1))
+            .collect();
+
+        Self {
+            colors: new_colors_without_ones,
             delays: self.delays,
         }
     }
