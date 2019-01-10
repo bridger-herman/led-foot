@@ -40,6 +40,7 @@ fn main() {
     let mut server = Nickel::new();
 
     server.utilize(StaticFilesHandler::new("static"));
+    server.utilize(StaticFilesHandler::new("sequences"));
 
     // Render index.html with the current color values on the server
     server.get(
@@ -51,7 +52,7 @@ fn main() {
             template_data.insert("current_color", json::encode(&current_color).unwrap());
             let dir_listing = fs::read_dir("./sequences").unwrap();
             let sequences: Vec<String> = dir_listing.map(|entry| {
-                entry.unwrap().path().to_str().unwrap().to_string()
+                entry.unwrap().path().file_name().unwrap().to_str().unwrap().to_string()
             }).collect();
             template_data.insert("sequences", json::encode(&sequences).unwrap());
 
@@ -100,7 +101,7 @@ fn main() {
         "/api/set-sequence",
         middleware! { |request, mut response|
             let data = request.json_as::<HashMap<String, String>>().unwrap();
-            led_system!().update_sequence(&data["name"]);
+            led_system!().update_sequence(&format!("./sequences/{}", data["name"]));
             led_system!().run_sequence();
 
             response.set(StatusCode::Ok);

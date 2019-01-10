@@ -1,6 +1,20 @@
+// Relies on the
+//
+// ```
+// <color/gradient>_<name>_<duration?>_<repeat?>.png
+// ```
+//
+// convention
+function stripName(sequencePath) {
+  let firstUnderscore = sequencePath.indexOf('_');
+  let secondUnderscore = sequencePath.indexOf('_', firstUnderscore + 1);
+  let dotIndex = sequencePath.lastIndexOf('.');
+  let lastIndex = secondUnderscore >= 0 ? secondUnderscore : dotIndex;
+  return sequencePath.slice(firstUnderscore + 1, lastIndex);
+}
+
 function loadSequence(name) {
   let data = {'name': name};
-  console.log(JSON.stringify(data, null, '\t'));
   $.ajax({
     type: 'POST',
     url: '/api/set-sequence',
@@ -30,19 +44,28 @@ function setup() {
 
   // Populate the favorites list
   for (let sequence in allSequences) {
+    let s = allSequences[sequence];
     $('#favorite-list')
       .append(
         $('<li/>')
           .append(
-            $('<button/>', {
-              class: 'sequence-loader',
-              text: allSequences[sequence],
+            $('<div/>', {
+              class: 'favorite-thumb',
+              attr: {
+                sequencePath: s,
+              },
               on: {
                 click: function(event) {
-                  loadSequence(event.target.innerText);
+                  let text =
+                    $(event.target)
+                      .parent('.favorite-thumb')
+                      .attr('sequencePath');
+                  loadSequence(text);
                 }
               }
             })
+            .append($('<img/>', {attr: {src: s}}))
+            .append($('<p/>', {text: stripName(s)}))
           )
       );
   }
