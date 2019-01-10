@@ -13,12 +13,14 @@ pub mod color;
 pub mod led_sequence;
 
 use std::collections::HashMap;
+use std::fs;
 use std::sync::Mutex;
 use std::thread::sleep;
 use std::time::Duration;
 
 use nickel::mimes::MediaType;
 use nickel::status::StatusCode;
+use nickel::JsonBody;
 use nickel::{HttpRouter, Nickel, StaticFilesHandler};
 use rustc_serialize::json;
 
@@ -43,9 +45,16 @@ fn main() {
     server.get(
         "/",
         middleware! { |_, mut response|
-            let current_color = &led_system!().current_color;
             let mut template_data = HashMap::new();
-            template_data.insert("current_color", &current_color);
+
+            let current_color = &led_system!().current_color;
+            template_data.insert("current_color", json::encode(&current_color).unwrap());
+            let dir_listing = fs::read_dir("./sequences").unwrap();
+            let sequences: Vec<String> = dir_listing.map(|entry| {
+                entry.unwrap().path().to_str().unwrap().to_string()
+            }).collect();
+            template_data.insert("sequences", json::encode(&sequences).unwrap());
+
             return response.render("templates/index.html", &template_data);
         },
     );
@@ -89,9 +98,13 @@ fn main() {
 
     server.post(
         "/api/set-sequence",
-        middleware! { |_, mut response|
-            led_system!().update_sequence("sequences/gradient_cools_20_repeat.png");
+        middleware! { |request, mut response|
+            let data = request.json_as::<HashMap<String, String>>().unwrap();
+            led_system!().update_sequence(&data["name"]);
             led_system!().run_sequence();
+
+            response.set(StatusCode::Ok);
+            format!("Setting sequence {}", data["name"])
         },
     );
 

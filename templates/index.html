@@ -7,16 +7,6 @@
         rel="stylesheet">
 </head>
 <body>
-  <div class="container preview">
-    <div id="color-preview"
-      style="background-color: rgb({{ current_color.r }}, {{ current_color.g
-      }}, {{ current_color.b }})">
-    </div>
-    <div id="white-preview"
-         style="background-color: rgb({{ current_color.w }}, {{
-         current_color.w }}, {{ current_color.w }})">
-    </div>
-  </div>
   <div class="container input-range-container">
     <form id="solid-rgbw-input"
           name="solid-rgbw-input">
@@ -25,29 +15,25 @@
             min="0"
             name="r"
             style="background-color: #CC3737"
-            type="range"
-            value="{{ current_color.r }}">
+            type="range">
       <input id="input-range-green"
             max="255"
             min="0"
             name="g"
             style="background-color: #37CC37"
-            type="range"
-            value="{{ current_color.g }}">
+            type="range">
       <input id="input-range-blue"
             max="255"
             min="0"
             name="b"
             style="background-color: #3737CC"
-            type="range"
-            value="{{ current_color.b }}">
+            type="range">
       <input id="input-range-white"
             max="255"
             min="0"
             name="w"
             style="background-color: #FFF"
-            type="range"
-            value="{{ current_color.w }}">
+            type="range">
       <input id="input-range-bright"
             max="255"
             min="0"
@@ -57,10 +43,17 @@
     </form>
   </div>
 
-  <button onclick="$.ajax({type: 'POST', url: '/api/set-sequence', error:
-          function() { console.log('set error'); }})">
-    PRESS ME
-  </button>
+  <div class="centered container favorites" id="favorite-gradients">
+    <ul class="" id='favorite-list'>
+      <!-- auto populated -->
+    </ul>
+  </div>
+
+  <script>
+    var initialColor = {{{current_color}}};
+    var allSequences = {{{sequences}}};
+  </script>
+
   <script src=
   "https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script> 
   <script src="/index.js"></script>

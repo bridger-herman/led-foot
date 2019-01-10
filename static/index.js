@@ -1,20 +1,14 @@
-// Long polling function for checking to see if the current color has been
-// updated
-function updatePreviewFromServer(color) {
+function loadSequence(name) {
+  let data = {'name': name};
+  console.log(JSON.stringify(data, null, '\t'));
   $.ajax({
-    type: 'GET',
-    url: '/api/get-rgbw',
-    success: function(info) {
-      let rgb = `rgb(${info.r}, ${info.g}, ${info.b})`;
-      let w = `rgb(${info.w}, ${info.w}, ${info.w})`;
-      $('#color-preview').css("background-color", rgb);
-      $('#white-preview').css("background-color", w);
-      updatePreviewFromServer(info);
-    },
-    error: function(response) {
-      console.log('Error!');
-      console.log(response);
-    },
+    type: 'POST',
+    url: '/api/set-sequence',
+    data: JSON.stringify(data, null, '\t'),
+    error: function(err) {
+      console.log('error setting sequence');
+      console.log(err);
+    }
   });
 }
 
@@ -27,8 +21,31 @@ function setup() {
     });
   });
 
-  // Grab the current color from the server every time it's updated
-  updatePreviewFromServer();
+  // Populate all the current color values from the server side
+  // TODO this is here because Mustache won't recognize JSON for some reason
+  $('#input-range-red').val(initialColor.r);
+  $('#input-range-green').val(initialColor.g);
+  $('#input-range-blue').val(initialColor.b);
+  $('#input-range-white').val(initialColor.w);
+
+  // Populate the favorites list
+  for (let sequence in allSequences) {
+    $('#favorite-list')
+      .append(
+        $('<li/>')
+          .append(
+            $('<button/>', {
+              class: 'sequence-loader',
+              text: allSequences[sequence],
+              on: {
+                click: function(event) {
+                  loadSequence(event.target.innerText);
+                }
+              }
+            })
+          )
+      );
+  }
 }
 
 window.onload = setup;
