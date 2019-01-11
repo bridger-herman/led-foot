@@ -1,6 +1,5 @@
 #[macro_use]
 extern crate lazy_static;
-extern crate median;
 #[macro_use]
 extern crate nickel;
 extern crate png;
@@ -89,6 +88,7 @@ fn main() {
             let green = request.param("green").unwrap().parse::<u8>().unwrap();
             let blue = request.param("blue").unwrap().parse::<u8>().unwrap();
             let white = request.param("white").unwrap().parse::<u8>().unwrap();
+            println!("Setting color {} {} {} {}", red, green, blue, white);
 
             led_system!().update_color(&Color::new(red, green, blue, white));
             led_system!().run_sequence();
@@ -102,6 +102,8 @@ fn main() {
         "/api/set-sequence",
         middleware! { |request, mut response|
             let data = request.json_as::<HashMap<String, String>>().unwrap();
+            println!("Setting sequence {}", data["name"]);
+
             led_system!().update_sequence(&format!("./sequences/{}", data["name"]));
             led_system!().run_sequence();
 

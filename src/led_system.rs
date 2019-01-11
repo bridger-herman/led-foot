@@ -85,18 +85,21 @@ impl LedSystem {
     /// Runs through the current LED sequence
     pub fn run_sequence(&mut self) {
         if let Some(ref mut seq) = self.current_sequence {
+            let mut i = 0;
             for (delay, color) in seq {
                 sleep(Duration::from_millis((delay * 1000.0) as u64));
                 self.current_color = color;
 
+                println!(
+                    "{} - {}, {}, {}, {}",
+                    i,
+                    self.current_color.r,
+                    self.current_color.g,
+                    self.current_color.b,
+                    self.current_color.w
+                );
+                i += 1;
                 if let Some(ref mut ser) = self.serial {
-                    println!(
-                        "{}, {}, {}, {}",
-                        self.current_color.r,
-                        self.current_color.g,
-                        self.current_color.b,
-                        self.current_color.w
-                    );
                     // Send the color
                     let write_bytes: [u8; 5] =
                         <[u8; 5]>::from(&self.current_color);
