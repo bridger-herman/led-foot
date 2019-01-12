@@ -1,6 +1,5 @@
 use std::io::{Read, Write};
 use std::path::Path;
-use std::sync::Mutex;
 use std::thread::sleep;
 use std::time::Duration;
 
@@ -8,21 +7,6 @@ use serial::{SerialPort, SystemPort};
 
 use crate::color::Color;
 use crate::led_sequence::LedSequence;
-
-#[macro_export]
-macro_rules! led_system {
-    () => {
-        crate::led_system::LED_SYSTEM.lock().unwrap()
-    };
-}
-
-lazy_static! {
-    pub static ref LED_SYSTEM: Mutex<LedSystem> = Mutex::new({
-        let mut system = LedSystem::default();
-        system.setup();
-        system
-    });
-}
 
 /// Controls the RGBW LEDs
 pub struct LedSystem {
@@ -88,8 +72,13 @@ impl LedSystem {
 
     /// Runs through the current LED sequence
     pub fn run_sequence(&mut self) {
+        led_state!().active = true;
         if let Some(ref mut seq) = self.current_sequence {
             for (i, (delay, color)) in seq.enumerate() {
+                if led_state!().changed_from_ui {
+                    info!("interrupting");
+                    break;
+                }
                 sleep(Duration::from_millis((delay * 1000.0) as u64));
                 self.current_color = color;
 
@@ -130,6 +119,7 @@ impl LedSystem {
                 }
             }
         }
+        led_state!().active = false;
     }
 }
 
