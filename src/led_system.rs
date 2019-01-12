@@ -38,6 +38,10 @@ impl LedSystem {
             ser.set_timeout(Duration::from_secs(2)).unwrap();
             Some(ser)
         } else {
+            error!(
+                "Unable to initialize serial at {}. Using serial mockup",
+                tty_name
+            );
             None
         };
 
@@ -85,12 +89,11 @@ impl LedSystem {
     /// Runs through the current LED sequence
     pub fn run_sequence(&mut self) {
         if let Some(ref mut seq) = self.current_sequence {
-            let mut i = 0;
-            for (delay, color) in seq {
+            for (i, (delay, color)) in seq.enumerate() {
                 sleep(Duration::from_millis((delay * 1000.0) as u64));
                 self.current_color = color;
 
-                println!(
+                info!(
                     "{} - {}, {}, {}, {}",
                     i,
                     self.current_color.r,
@@ -98,7 +101,6 @@ impl LedSystem {
                     self.current_color.b,
                     self.current_color.w
                 );
-                i += 1;
                 if let Some(ref mut ser) = self.serial {
                     // Send the color
                     let write_bytes: [u8; 5] =

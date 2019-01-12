@@ -1,4 +1,7 @@
 #[macro_use]
+extern crate log;
+extern crate simple_logger;
+#[macro_use]
 extern crate lazy_static;
 #[macro_use]
 extern crate nickel;
@@ -37,6 +40,7 @@ lazy_static! {
 }
 
 fn main() {
+    simple_logger::init_with_level(::log::Level::Info).unwrap();
     let mut server = Nickel::new();
 
     server.utilize(StaticFilesHandler::new("static"));
@@ -88,7 +92,7 @@ fn main() {
             let green = request.param("green").unwrap().parse::<u8>().unwrap();
             let blue = request.param("blue").unwrap().parse::<u8>().unwrap();
             let white = request.param("white").unwrap().parse::<u8>().unwrap();
-            println!("Setting color {} {} {} {}", red, green, blue, white);
+            debug!("Setting color {} {} {} {}", red, green, blue, white);
 
             led_system!().update_color(&Color::new(red, green, blue, white));
             led_system!().run_sequence();
@@ -102,7 +106,7 @@ fn main() {
         "/api/set-sequence",
         middleware! { |request, mut response|
             let data = request.json_as::<HashMap<String, String>>().unwrap();
-            println!("Setting sequence {}", data["name"]);
+            debug!("Setting sequence {}", data["name"]);
 
             led_system!().update_sequence(&format!("./sequences/{}", data["name"]));
             led_system!().run_sequence();
