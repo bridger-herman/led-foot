@@ -66,21 +66,22 @@ fn main() {
     );
 
     server.post(
-        "/api/set-rgbw-r=:red&g=:green&b=:blue&w=:white",
+        "/api/set-rgbw",
         middleware! {
             |request, mut response|
-            let red = request.param("red").unwrap().parse::<u8>().unwrap();
-            let green = request.param("green").unwrap().parse::<u8>().unwrap();
-            let blue = request.param("blue").unwrap().parse::<u8>().unwrap();
-            let white = request.param("white").unwrap().parse::<u8>().unwrap();
-            println!("Setting color {} {} {} {}", red, green, blue, white);
+            let color = request.json_as::<Color>().unwrap();
+            println!("Setting color {:?}", color);
 
-            led_state!().changed_from_ui = true;
-            led_system!().update_color(&Color::new(red, green, blue, white));
+            {
+                let mut state = led_state!();
+                state.changed_from_ui = state.active;
+            }
+            led_system!().update_color(&color);
             led_system!().run_sequence();
+            led_state!().changed_from_ui = false;
 
             response.set(StatusCode::Ok);
-            format!("Setting color {} {} {} {}", red, green, blue, white)
+            format!("Setting color {:?}", color)
         },
     );
 

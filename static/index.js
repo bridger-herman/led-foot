@@ -29,9 +29,16 @@ function loadSequence(name) {
 function setup() {
   // Setup ajax POST requests to update RGBW leds
   $('.input-range-container input').on('change', function() {
+    let data = {
+      r: $('#input-range-red').val(),
+      g: $('#input-range-green').val(),
+      b: $('#input-range-blue').val(),
+      w: $('#input-range-white').val(),
+    };
     $.ajax({
       type: 'POST',
-      url: '/api/set-rgbw-' + $('#solid-rgbw-input').serialize(),
+      data: JSON.stringify(data, null, '\t'),
+      url: '/api/set-rgbw',
     });
   });
 
