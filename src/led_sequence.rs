@@ -8,14 +8,14 @@ use crate::color::{Color, FloatColor};
 const RESULUTION: f32 = 30.0;
 const DURATION: f32 = 0.5;
 
-#[derive(Debug)]
-enum LedSequenceType {
+#[derive(Debug, Clone)]
+pub enum LedSequenceType {
     Color,
     Gradient,
 }
 
-#[derive(Debug)]
-struct LedSequenceInfo {
+#[derive(Debug, Clone)]
+pub struct LedSequenceInfo {
     pub sequence_type: LedSequenceType,
     pub name: String,
     pub duration: f32,
@@ -26,6 +26,9 @@ struct LedSequenceInfo {
 pub struct LedSequence {
     pub colors: VecDeque<Color>,
     pub delays: VecDeque<f32>,
+    pub info: LedSequenceInfo,
+    index: usize,
+    repeat_start: usize,
 }
 
 impl LedSequence {
@@ -48,7 +51,18 @@ impl LedSequence {
             ));
         }
 
-        Self { colors, delays }
+        Self {
+            colors,
+            delays,
+            info: LedSequenceInfo {
+                sequence_type: LedSequenceType::Color,
+                name: "lerp".to_string(),
+                duration: DURATION,
+                repeat: false,
+            },
+            index: 0,
+            repeat_start: 0,
+        }
     }
 
     /// Load a gradient or single colour from a png file
@@ -136,12 +150,20 @@ impl LedSequence {
                     delays.push_back(delay);
                 }
 
-                let sequence = Self { colors, delays }.smooth_colors();
+                let sequence = Self {
+                    colors,
+                    delays,
+                    info,
+                    index: 0,
+                    repeat_start: 0,
+                }
+                .smooth_colors();
                 let initial_fade =
                     Self::from_color_lerp(fade_from, &sequence.colors[0])
                         .with_delay(delay);
+                let fade_len = initial_fade.colors.len();
 
-                initial_fade.chain(sequence)
+                initial_fade.chain(sequence).with_repeat_start(fade_len)
             }
         }
     }
@@ -150,35 +172,38 @@ impl LedSequence {
     ///
     /// Useful for chaining on to the smoothed version of gradients loaded from
     /// a file
-    pub fn with_delay(self, delay: f32) -> Self {
-        Self {
-            colors: self.colors,
-            delays: self.delays.iter().map(|_| delay).collect(),
-        }
+    pub fn with_delay(mut self, delay: f32) -> Self {
+        self.delays = self.delays.iter().map(|_| delay).collect();
+        self
+    }
+
+    /// Sets the index that the iterator loops back to
+    pub fn with_repeat_start(mut self, repeat_start: usize) -> Self {
+        self.repeat_start = repeat_start;
+        self
     }
 
     /// Chain two LED sequences together, consuming both
     fn chain(mut self, other: LedSequence) -> Self {
         self.colors.extend(other.colors);
         self.delays.extend(other.delays);
-        Self {
-            colors: self.colors,
-            delays: self.delays,
-        }
+        self.info = {
+            let mut inf = other.info.clone();
+            inf.duration = self.info.duration + other.info.duration;
+            inf
+        };
+        self
     }
 
     /// Cuts out values <= 1 and makes them 0 to avoid color stuttering
-    fn smooth_colors(self) -> Self {
+    fn smooth_colors(mut self) -> Self {
         let new_colors_without_ones = self
             .colors
             .into_iter()
             .filter(|color| !color.any_value(1))
             .collect();
-
-        Self {
-            colors: new_colors_without_ones,
-            delays: self.delays,
-        }
+        self.colors = new_colors_without_ones;
+        self
     }
 }
 
@@ -186,11 +211,16 @@ impl Iterator for &mut LedSequence {
     type Item = (f32, Color);
 
     fn next(&mut self) -> Option<Self::Item> {
-        let (delay, color) = (self.delays.pop_front(), self.colors.pop_front());
-        if delay.is_none() || color.is_none() {
-            None
-        } else {
-            Some((delay.unwrap(), color.unwrap()))
+        if self.index >= self.delays.len() || self.index >= self.colors.len() {
+            if self.info.repeat {
+                self.index = self.repeat_start;
+            } else {
+                return None;
+            }
         }
+        let (delay, color) =
+            (self.delays[self.index], self.colors[self.index].clone());
+        self.index += 1;
+        Some((delay, color))
     }
 }
