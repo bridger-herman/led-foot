@@ -128,7 +128,7 @@ impl Default for LedSystem {
         Self {
             current_color: Color::default(),
             serial: {
-                let serial = serial::open("/dev/ttyACM0");
+                let serial = serial::open("/dev/tty.usbmodem1411");
                 if let Ok(mut ser) = serial {
                     ser.set_timeout(Duration::from_secs(2)).unwrap();
                     Some(ser)

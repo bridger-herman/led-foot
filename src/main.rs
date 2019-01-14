@@ -5,14 +5,17 @@ extern crate simple_logger;
 extern crate lazy_static;
 #[macro_use]
 extern crate nickel;
+extern crate chrono;
 extern crate png;
 extern crate rustc_serialize;
+extern crate schedule;
 extern crate serial;
 
 #[macro_use]
 pub mod state;
 
 pub mod color;
+pub mod led_scheduler;
 pub mod led_sequence;
 pub mod led_system;
 
@@ -26,10 +29,12 @@ use nickel::{HttpRouter, Nickel, StaticFilesHandler};
 use rustc_serialize::json;
 
 use crate::color::Color;
+use crate::led_scheduler::LedScheduler;
 
 fn main() {
     simple_logger::init_with_level(::log::Level::Info).unwrap();
     let mut server = Nickel::new();
+    let mut scheduler = LedScheduler::default();
 
     server.utilize(StaticFilesHandler::new("static"));
     server.utilize(StaticFilesHandler::new("sequences"));
@@ -104,5 +109,13 @@ fn main() {
         },
     );
 
-    server.listen("0.0.0.0:8000").expect("Failed to serve");
+    server
+        .listen("0.0.0.0:8000")
+        .expect("Failed to serve")
+        .detach();
+    loop {
+        scheduler.one_frame();
+
+        std::thread::sleep(std::time::Duration::from_millis(500));
+    }
 }
