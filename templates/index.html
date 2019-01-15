@@ -3,10 +3,83 @@
 <head>
   <meta charset="utf-8">
   <title>LED Control</title>
-  <link href="/master.css"
-        rel="stylesheet">
-  <link href="/favorites.css"
-        rel="stylesheet">
+  <style>
+    body {
+      background: black;
+      color: white;
+    }
+
+    @media only screen and (max-width: 1000px) {
+      .container {
+        width: 90vw;
+      }
+    }
+    @media only screen and (min-width: 1000px) {
+      .container {
+        width: 50vw;
+      }
+    }
+
+    .container {
+      margin: auto;
+      display: flex;
+      flex-direction: column;
+    }
+
+    input[type="range"] {
+      border-width: 5px;
+      background: #111;
+      width: calc(100% - 15px);
+      margin: 10px;
+      height: 7vh;
+    }
+
+    .preview {
+      border: 2px solid white;
+      height: 10vh;
+    }
+
+    .preview * {
+      height: 50%;
+    }
+
+    .favorites ul {
+      display: flex;
+      flex-direction: row;
+      flex-wrap: wrap;
+      align-items: center;
+      list-style: none;
+    }
+
+    .favorite-thumb {
+      position: relative;
+      width: 18vw;
+      height: 10vh;
+      border: 1px solid #ddd;
+    }
+    .favorite-thumb img {
+      width: 100%;
+      height: 100%;
+    }
+    .favorite-thumb p {
+      margin: 0;
+      position: absolute;
+      left: 5%;
+      bottom: 8%;
+      text-shadow: 0.1em 0.1em 0.2em black;
+      font-size: 14pt;
+      font-weight: bold;
+      font-family: sans-serif;
+    }
+
+    .selected {
+      border-width: 5px;
+    }
+
+    ul.no-indent {
+      padding-left: 0;
+    }
+  </style> 
 </head>
 <body>
   <div class="container input-range-container">
@@ -51,13 +124,94 @@
     </ul>
   </div>
 
+  <script src=
+  "https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script> 
+
   <script>
     var initialColor = {{{current_color}}};
     var allSequences = {{{sequences}}};
-  </script>
 
-  <script src=
-  "https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script> 
-  <script src="/index.js"></script>
+    // Relies on the
+    //
+    // ```
+    // <color/gradient>_<name>_<duration?>_<repeat?>.png
+    // ```
+    //
+    // convention
+    function stripName(sequencePath) {
+      let firstUnderscore = sequencePath.indexOf('_');
+      let secondUnderscore = sequencePath.indexOf('_', firstUnderscore + 1);
+      let dotIndex = sequencePath.lastIndexOf('.');
+      let lastIndex = secondUnderscore >= 0 ? secondUnderscore : dotIndex;
+      return sequencePath.slice(firstUnderscore + 1, lastIndex);
+    }
+
+    function loadSequence(name) {
+      let data = {'name': name};
+      $.ajax({
+        type: 'POST',
+        url: '/api/set-sequence',
+        data: JSON.stringify(data, null, '\t'),
+        error: function(err) {
+          console.log('error setting sequence');
+          console.log(err);
+        }
+      });
+    }
+
+    function setup() {
+      // Setup ajax POST requests to update RGBW leds
+      $('.input-range-container input').on('change', function() {
+        let data = {
+          r: $('#input-range-red').val(),
+          g: $('#input-range-green').val(),
+          b: $('#input-range-blue').val(),
+          w: $('#input-range-white').val(),
+        };
+        $.ajax({
+          type: 'POST',
+          data: JSON.stringify(data, null, '\t'),
+          url: '/api/set-rgbw',
+        });
+      });
+
+      // Populate all the current color values from the server side
+      // TODO this is here because Mustache won't recognize JSON for some reason
+      $('#input-range-red').val(initialColor.r);
+      $('#input-range-green').val(initialColor.g);
+      $('#input-range-blue').val(initialColor.b);
+      $('#input-range-white').val(initialColor.w);
+
+      // Populate the favorites list
+      for (let sequence in allSequences) {
+        let s = allSequences[sequence];
+        $('#favorite-list')
+          .append(
+            $('<li/>')
+              .append(
+                $('<div/>', {
+                  class: 'favorite-thumb',
+                  attr: {
+                    sequencePath: s,
+                  },
+                  on: {
+                    click: function(event) {
+                      let text =
+                        $(event.target)
+                          .parent('.favorite-thumb')
+                          .attr('sequencePath');
+                      loadSequence(text);
+                    }
+                  }
+                })
+                .append($('<img/>', {attr: {src: s}}))
+                .append($('<p/>', {text: stripName(s)}))
+              )
+          );
+      }
+    }
+
+    window.onload = setup;
+  </script>
 </body>
 </html>

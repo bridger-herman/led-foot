@@ -36,7 +36,6 @@ fn main() {
     let mut server = Nickel::new();
     let mut scheduler = LedScheduler::default();
 
-    server.utilize(StaticFilesHandler::new("static"));
     server.utilize(StaticFilesHandler::new("sequences"));
 
     // Render index.html with the current color values on the server

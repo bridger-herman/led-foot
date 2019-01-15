@@ -4,3 +4,4 @@ Cargo.lock
 *.swp
 *.orig
 schedules
+nohup.out
