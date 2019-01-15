@@ -43,7 +43,7 @@ impl LedSequence {
         let mut colors = VecDeque::with_capacity(RESULUTION as usize);
         let mut delays = VecDeque::with_capacity(RESULUTION as usize);
 
-        for i in 0..RESULUTION as usize {
+        for i in 0..(RESULUTION as usize) + 1 {
             let percent = i as f32 / RESULUTION;
             delays.push_back(DURATION / RESULUTION);
             colors.push_back(<Color>::from(
