@@ -8,8 +8,11 @@ extern crate nickel;
 extern crate chrono;
 extern crate png;
 extern crate rustc_serialize;
-extern crate schedule;
 extern crate serial;
+#[macro_use]
+extern crate serde_derive;
+extern crate serde;
+extern crate serde_json;
 
 #[macro_use]
 pub mod state;
@@ -32,7 +35,7 @@ use crate::color::Color;
 use crate::led_scheduler::LedScheduler;
 
 fn main() {
-    simple_logger::init_with_level(::log::Level::Info).unwrap();
+    simple_logger::init_with_level(::log::Level::Debug).unwrap();
     let mut server = Nickel::new();
     let mut scheduler = LedScheduler::default();
 

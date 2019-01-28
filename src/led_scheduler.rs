@@ -1,17 +1,76 @@
 use std::fs::File;
 use std::io::prelude::*;
 
-use schedule::{Agenda, Job};
+use chrono::prelude::*;
+use serde_json;
 
-const SCHEDULE_FILE: &str = "schedules/schedule.txt";
+const SCHEDULE_FILE: &str = "schedules/schedule.json";
 
+#[derive(Debug, Deserialize, Clone)]
+struct LedAlarm {
+    days: Vec<String>,
+    hour: String,
+    minute: String,
+    sequence: String,
+}
+
+#[derive(Debug, Deserialize)]
 pub struct LedScheduler {
-    agenda: Agenda<'static>,
+    alarms: Vec<LedAlarm>,
+    current_active: Option<LedAlarm>,
 }
 
 impl LedScheduler {
     pub fn one_frame(&mut self) {
-        self.agenda.run_pending();
+        let now = Local::now();
+        println!("{:?} {:?} {:?}", now.hour(), now.minute(), now.weekday());
+
+        let now_weekday = &format!("{:?}", now.weekday());
+        let now_hour = &format!("{:?}", now.hour());
+        let now_minute = &format!("{:?}", now.minute());
+
+        let reset_active =
+            if let Some(LedAlarm { ref minute, .. }) = self.current_active {
+                minute != now_minute
+            } else {
+                false
+            };
+
+        if self.current_active.is_none() {
+            for alarm in &self.alarms {
+                for day in &alarm.days {
+                    if now_weekday == day
+                        && now_hour == &alarm.hour
+                        && now_minute == &alarm.minute
+                    {
+                        info!(
+                            "Starting on schedule: {} {}:{}",
+                            day, alarm.hour, alarm.minute
+                        );
+                        {
+                            let mut state = led_state!();
+                            state.changed_from_ui = state.active;
+                        }
+                        led_system!().update_sequence(&format!(
+                            "./sequences/{}",
+                            alarm.sequence
+                        ));
+                        led_system!().run_sequence();
+                        led_state!().changed_from_ui = false;
+                        self.current_active = Some(alarm.clone());
+                    } else {
+                        debug!("Not starting");
+                    }
+                }
+            }
+        } else {
+            debug!("Not starting (Alarm currently active)")
+        }
+
+        if reset_active {
+            self.current_active = None;
+            debug!("Reset active to None");
+        }
     }
 }
 
@@ -23,35 +82,12 @@ impl Default for LedScheduler {
         file.read_to_string(&mut contents)
             .expect("Unable to read file");
 
-        let lines_parts: Vec<Vec<String>> = contents
-            .split('\n')
-            .map(|line| line.trim().to_string())
-            .filter(|line| !line.is_empty())
-            .map(|line| line.split(';').map(|part| part.to_string()).collect())
-            .collect();
+        let alarms: Vec<LedAlarm> = serde_json::from_str(&contents)
+            .expect("Unable to parse JSON schedule file");
 
-        let jobs: Vec<_> = lines_parts
-            .into_iter()
-            .map(|parts| {
-                assert_eq!(parts.len(), 2);
-                let (cron, name) = (parts[0].clone(), parts[1].clone());
-                println!("Setting {} on schedule for {}", name, cron);
-                Job::new(
-                    move || {
-                        println!("Changing to {} on schedule", name);
-                        led_system!()
-                            .update_sequence(&format!("./sequences/{}", name));
-                        led_system!().run_sequence();
-                    },
-                    cron.parse().unwrap(),
-                )
-            })
-            .collect();
-
-        let mut agenda = Agenda::new();
-        for job in jobs {
-            agenda.add(job);
+        Self {
+            alarms,
+            current_active: None,
         }
-        Self { agenda }
     }
 }
