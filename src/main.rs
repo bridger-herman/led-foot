@@ -35,7 +35,16 @@ use crate::color::Color;
 use crate::led_scheduler::LedScheduler;
 
 fn main() {
-    simple_logger::init_with_level(::log::Level::Debug).unwrap();
+    let log_level = ::std::env::args().filter(|item| item == "-v").count();
+    let log_level = match log_level {
+        1 => ::log::Level::Info,
+        2 => ::log::Level::Debug,
+        3 => ::log::Level::Trace,
+        _ => ::log::Level::Warn,
+    };
+    println!("Starting LED server with verbosity {:?}", log_level);
+
+    simple_logger::init_with_level(log_level).unwrap();
     let mut server = Nickel::new();
     let mut scheduler = LedScheduler::default();
 

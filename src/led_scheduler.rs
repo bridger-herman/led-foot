@@ -25,9 +25,9 @@ impl LedScheduler {
         let now = Local::now();
         println!("{:?} {:?} {:?}", now.hour(), now.minute(), now.weekday());
 
-        let now_weekday = &format!("{:?}", now.weekday());
-        let now_hour = &format!("{:?}", now.hour());
-        let now_minute = &format!("{:?}", now.minute());
+        let now_weekday = &format!("{:02?}", now.weekday());
+        let now_hour = &format!("{:02?}", now.hour());
+        let now_minute = &format!("{:02?}", now.minute());
 
         let reset_active =
             if let Some(LedAlarm { ref minute, .. }) = self.current_active {
@@ -39,6 +39,15 @@ impl LedScheduler {
         if self.current_active.is_none() {
             for alarm in &self.alarms {
                 for day in &alarm.days {
+                    trace!(
+                        "{:?} {:?} {:?} == {:?} {:?} {:?}",
+                        now_weekday,
+                        now_hour,
+                        now_minute,
+                        day,
+                        &alarm.hour,
+                        &alarm.minute
+                    );
                     if now_weekday == day
                         && now_hour == &alarm.hour
                         && now_minute == &alarm.minute
@@ -58,8 +67,6 @@ impl LedScheduler {
                         led_system!().run_sequence();
                         led_state!().changed_from_ui = false;
                         self.current_active = Some(alarm.clone());
-                    } else {
-                        debug!("Not starting");
                     }
                 }
             }
@@ -84,6 +91,13 @@ impl Default for LedScheduler {
 
         let alarms: Vec<LedAlarm> = serde_json::from_str(&contents)
             .expect("Unable to parse JSON schedule file");
+
+        for alarm in &alarms {
+            debug!(
+                "Setting alarm: {:?} {} {}",
+                alarm.days, alarm.hour, alarm.minute
+            );
+        }
 
         Self {
             alarms,
