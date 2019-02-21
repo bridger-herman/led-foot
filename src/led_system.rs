@@ -82,7 +82,7 @@ impl LedSystem {
                 sleep(Duration::from_millis((delay * 1000.0) as u64));
                 self.current_color = color;
 
-                info!(
+                debug!(
                     "{} - {}, {}, {}, {}",
                     i,
                     self.current_color.r,

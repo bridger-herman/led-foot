@@ -86,7 +86,7 @@ fn main() {
         middleware! {
             |request, mut response|
             let color = request.json_as::<Color>().unwrap();
-            println!("Setting color {:?}", color);
+            info!("Setting color {:?}", color);
 
             {
                 let mut state = led_state!();
@@ -105,7 +105,7 @@ fn main() {
         "/api/set-sequence",
         middleware! { |request, mut response|
             let data = request.json_as::<HashMap<String, String>>().unwrap();
-            println!("Setting sequence {}", data["name"]);
+            info!("Setting sequence {}", data["name"]);
 
             {
                 let mut state = led_state!();

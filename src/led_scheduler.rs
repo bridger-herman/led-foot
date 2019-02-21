@@ -23,7 +23,6 @@ pub struct LedScheduler {
 impl LedScheduler {
     pub fn one_frame(&mut self) {
         let now = Local::now();
-        println!("{:?} {:?} {:?}", now.hour(), now.minute(), now.weekday());
 
         let now_weekday = &format!("{:02?}", now.weekday());
         let now_hour = &format!("{:02?}", now.hour());
