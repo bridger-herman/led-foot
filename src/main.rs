@@ -24,6 +24,7 @@ pub mod led_system;
 
 use std::collections::HashMap;
 use std::fs;
+use std::thread;
 
 use nickel::mimes::MediaType;
 use nickel::status::StatusCode;
@@ -112,7 +113,9 @@ fn main() {
                 state.changed_from_ui = state.active;
             }
             led_system!().update_sequence(&format!("./sequences/{}", data["name"]));
-            led_system!().run_sequence();
+            thread::spawn(move || {
+                led_system!().run_sequence();
+            });
             led_state!().changed_from_ui = false;
 
             response.set(StatusCode::Ok);
