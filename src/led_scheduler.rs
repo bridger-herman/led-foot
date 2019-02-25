@@ -6,8 +6,8 @@ use serde_json;
 
 const SCHEDULE_FILE: &str = "schedules/schedule.json";
 
-#[derive(Debug, Deserialize, Clone)]
-struct LedAlarm {
+#[derive(Debug, RustcEncodable, Deserialize, Clone)]
+pub struct LedAlarm {
     days: Vec<String>,
     hour: String,
     minute: String,
@@ -16,7 +16,7 @@ struct LedAlarm {
 
 #[derive(Debug, Deserialize)]
 pub struct LedScheduler {
-    alarms: Vec<LedAlarm>,
+    pub alarms: Vec<LedAlarm>,
     current_active: Option<LedAlarm>,
 }
 

@@ -2,6 +2,7 @@
 
 use std::sync::Mutex;
 
+use crate::led_scheduler::LedScheduler;
 use crate::led_system::LedSystem;
 
 lazy_static! {
@@ -11,6 +12,8 @@ lazy_static! {
         system
     });
     pub static ref STATE: Mutex<LedState> = Mutex::new(LedState::default());
+    pub static ref SCHEDULE: Mutex<LedScheduler> =
+        Mutex::new(LedScheduler::default());
 }
 
 #[macro_export]
@@ -24,6 +27,13 @@ macro_rules! led_system {
 macro_rules! led_state {
     () => {
         crate::state::STATE.try_lock().unwrap()
+    };
+}
+
+#[macro_export]
+macro_rules! led_schedule {
+    () => {
+        crate::state::SCHEDULE.try_lock().unwrap()
     };
 }
 

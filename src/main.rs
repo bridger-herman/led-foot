@@ -33,7 +33,6 @@ use nickel::{HttpRouter, Nickel, StaticFilesHandler};
 use rustc_serialize::json;
 
 use crate::color::Color;
-use crate::led_scheduler::LedScheduler;
 
 fn main() {
     let log_level = ::std::env::args().filter(|item| item == "-v").count();
@@ -47,7 +46,6 @@ fn main() {
 
     simple_logger::init_with_level(log_level).unwrap();
     let mut server = Nickel::new();
-    let mut scheduler = LedScheduler::default();
 
     server.utilize(StaticFilesHandler::new("sequences"));
 
@@ -76,6 +74,17 @@ fn main() {
             let returned =
                 json::encode(&led_system!().current_color.clone())
                     .expect("Failed to encode color");
+            response.set(StatusCode::Ok);
+            response.set(MediaType::Json);
+            returned
+        },
+    );
+
+    server.get(
+        "/api/get-schedule",
+        middleware! { |_, mut response|
+            let returned = json::encode(&led_schedule!().alarms)
+                    .expect("Failed to encode schedule");
             response.set(StatusCode::Ok);
             response.set(MediaType::Json);
             returned
@@ -128,7 +137,7 @@ fn main() {
         .expect("Failed to serve")
         .detach();
     loop {
-        scheduler.one_frame();
+        led_schedule!().one_frame();
 
         std::thread::sleep(std::time::Duration::from_millis(500));
     }

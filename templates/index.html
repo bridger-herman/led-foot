@@ -124,6 +124,10 @@
     </ul>
   </div>
 
+  <div id="schedule">
+    <!-- auto populated -->
+  </div>
+
   <script src=
   "https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script> 
 
@@ -209,6 +213,21 @@
               )
           );
       }
+
+      // Populate the schedules
+      $.ajax({
+        type: 'GET',
+        url: '/api/get-schedule',
+        success: function(response) {
+          console.log(response);
+          for (let i in response) {
+            $('#schedule')
+              .append(
+                $('<p/>', {text: JSON.stringify(response[i])})
+              )
+          }
+        },
+      });
     }
 
     window.onload = setup;
