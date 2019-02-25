@@ -72,14 +72,20 @@
       font-family: sans-serif;
     }
 
-    .selected {
-      border-width: 5px;
-    }
-
     ul.no-indent {
       padding-left: 0;
     }
-  </style> 
+
+    #schedule {
+      display: block;
+      margin: auto;
+      border: 1px solid white;
+      width: 18vw;
+    }
+    #schedule img {
+      width: 100%;
+    }
+  </style>
 </head>
 <body>
   <div class="container input-range-container">
@@ -129,7 +135,7 @@
   </div>
 
   <script src=
-  "https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script> 
+  "https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
 
   <script>
     var initialColor = {{{current_color}}};
@@ -161,6 +167,20 @@
           console.log(err);
         }
       });
+    }
+
+    function makeScheduleElement(data) {
+      return $('<div/>', {
+        class: 'schedule-element'
+      }).append(
+        $('<p/>', {text: 'Hour: ' + data.hour})
+      ).append(
+        $('<p/>', {text: 'Minute: ' + data.minute})
+      ).append(
+        $('<p/>', {text: 'Days: ' + data.days})
+      ).append(
+        $('<img/>', {src: data.sequence})
+      );
     }
 
     function setup() {
@@ -219,12 +239,9 @@
         type: 'GET',
         url: '/api/get-schedule',
         success: function(response) {
-          console.log(response);
           for (let i in response) {
             $('#schedule')
-              .append(
-                $('<p/>', {text: JSON.stringify(response[i])})
-              )
+              .append(makeScheduleElement(response[i]))
           }
         },
       });
