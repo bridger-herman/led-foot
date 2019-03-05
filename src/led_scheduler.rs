@@ -6,7 +6,9 @@ use serde_json;
 
 const SCHEDULE_FILE: &str = "schedules/schedule.json";
 
-#[derive(Debug, RustcEncodable, Deserialize, Clone)]
+#[derive(
+    Debug, RustcEncodable, RustcDecodable, Serialize, Deserialize, Clone,
+)]
 pub struct LedAlarm {
     days: Vec<String>,
     hour: String,
@@ -21,6 +23,16 @@ pub struct LedScheduler {
 }
 
 impl LedScheduler {
+    pub fn rewrite_schedule(&self) {
+        let mut file =
+            File::create(SCHEDULE_FILE).expect("Unable to open schedule file");
+
+        let json_string = serde_json::to_string_pretty(&self.alarms)
+            .expect("Unable to encode schdeule json string");
+        file.write_all(json_string.as_bytes())
+            .expect("Unable to rewrite schedule");
+    }
+
     pub fn one_frame(&mut self) {
         let now = Local::now();
 

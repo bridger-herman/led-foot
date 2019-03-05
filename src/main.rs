@@ -33,6 +33,7 @@ use nickel::{HttpRouter, Nickel, StaticFilesHandler};
 use rustc_serialize::json;
 
 use crate::color::Color;
+use crate::led_scheduler::LedAlarm;
 
 fn main() {
     let log_level = ::std::env::args().filter(|item| item == "-v").count();
@@ -129,6 +130,19 @@ fn main() {
 
             response.set(StatusCode::Ok);
             format!("Setting sequence {}", data["name"])
+        },
+    );
+
+    server.post(
+        "/api/set-schedule",
+        middleware! { |request, mut response|
+            let data = request.json_as::<Vec<LedAlarm>>().unwrap();
+            info!("Setting schedule");
+            led_schedule!().alarms = data;
+            led_schedule!().rewrite_schedule();
+
+            response.set(StatusCode::Ok);
+            "Setting schedule".to_string()
         },
     );
 

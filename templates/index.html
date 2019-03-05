@@ -169,15 +169,64 @@
       });
     }
 
+    function updateSchedule() {
+      let schedule = [];
+      let scheduleElements = $('.schedule-element');
+      scheduleElements.each(function (index, element) {
+        let hour = $(element).find('.hour-input').val();
+        let minute = $(element).find('.minute-input').val();
+        let days = $(element).find('.days-input').val();
+        schedule.push({
+          days: days.split(','),
+          hour: hour,
+          minute: minute,
+          sequence: 'gradient_sunrise2_600.png', // TODO hardcoded for now
+        });
+      });
+
+      $.ajax({
+        type: 'POST',
+        url: '/api/set-schedule',
+        data: JSON.stringify(schedule, null, '\t'),
+        error: function(err) {
+          console.log('error setting schedule');
+          console.log(err);
+        }
+      });
+    }
+
     function makeScheduleElement(data) {
       return $('<div/>', {
         class: 'schedule-element'
       }).append(
-        $('<p/>', {text: 'Hour: ' + data.hour})
+        $('<input/>', {
+          class: 'hour-input',
+          value: data.hour,
+          type: 'number',
+          min: 0, max: 23,
+          on: {
+            change: updateSchedule
+          }
+        })
       ).append(
-        $('<p/>', {text: 'Minute: ' + data.minute})
+        $('<label/>', {text: 'Hour'})
       ).append(
-        $('<p/>', {text: 'Days: ' + data.days})
+        $('<input/>', {
+          class: 'minute-input',
+          value: data.minute,
+          type: 'number',
+          min: 0,
+          max: 59,
+          on: {
+            change: updateSchedule
+          }
+        })
+      ).append(
+        $('<label/>', {text: 'Minute'})
+      ).append(
+        $('<input/>', {value: data.days, class: 'days-input'})
+      ).append(
+        $('<label/>', {text: 'Days'})
       ).append(
         $('<img/>', {src: data.sequence})
       );
