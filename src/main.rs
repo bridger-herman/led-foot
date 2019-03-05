@@ -138,7 +138,7 @@ fn main() {
         middleware! { |request, mut response|
             let data = request.json_as::<Vec<LedAlarm>>().unwrap();
             info!("Setting schedule");
-            led_schedule!().alarms = data;
+            led_schedule!().reset_alarms(&data);
             led_schedule!().rewrite_schedule();
 
             response.set(StatusCode::Ok);

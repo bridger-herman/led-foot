@@ -23,6 +23,21 @@ pub struct LedScheduler {
 }
 
 impl LedScheduler {
+    pub fn reset_alarms(&mut self, new_alarms: &[LedAlarm]) {
+        let new_alarms: Vec<_> = new_alarms
+            .iter()
+            .map(|alarm| {
+                let mut new_alarm = alarm.clone();
+                new_alarm.hour =
+                    format!("{:02?}", new_alarm.hour.parse::<u8>().unwrap());
+                new_alarm.minute =
+                    format!("{:02?}", new_alarm.minute.parse::<u8>().unwrap());
+                new_alarm
+            })
+            .collect();
+        self.alarms = new_alarms.to_vec();
+    }
+
     pub fn rewrite_schedule(&self) {
         let mut file =
             File::create(SCHEDULE_FILE).expect("Unable to open schedule file");
