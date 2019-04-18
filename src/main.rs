@@ -11,6 +11,7 @@ extern crate rustc_serialize;
 extern crate serial;
 #[macro_use]
 extern crate serde_derive;
+extern crate net_sniffer;
 extern crate serde;
 extern crate serde_json;
 
@@ -21,6 +22,7 @@ pub mod color;
 pub mod led_scheduler;
 pub mod led_sequence;
 pub mod led_system;
+pub mod on_wifi;
 
 use std::collections::HashMap;
 use std::fs;
@@ -150,8 +152,11 @@ fn main() {
         .listen("0.0.0.0:8000")
         .expect("Failed to serve")
         .detach();
+
     loop {
         led_schedule!().one_frame();
+
+        wifi_manager!().one_frame();
 
         std::thread::sleep(std::time::Duration::from_millis(500));
     }

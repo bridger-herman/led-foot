@@ -4,6 +4,7 @@ use std::sync::Mutex;
 
 use crate::led_scheduler::LedScheduler;
 use crate::led_system::LedSystem;
+use crate::on_wifi::WifiManager;
 
 lazy_static! {
     pub static ref LED_SYSTEM: Mutex<LedSystem> = Mutex::new({
@@ -14,6 +15,8 @@ lazy_static! {
     pub static ref STATE: Mutex<LedState> = Mutex::new(LedState::default());
     pub static ref SCHEDULE: Mutex<LedScheduler> =
         Mutex::new(LedScheduler::default());
+    pub static ref WIFI_MANAGER: Mutex<WifiManager> =
+        Mutex::new(WifiManager::default());
 }
 
 #[macro_export]
@@ -34,6 +37,13 @@ macro_rules! led_state {
 macro_rules! led_schedule {
     () => {
         crate::state::SCHEDULE.try_lock().unwrap()
+    };
+}
+
+#[macro_export]
+macro_rules! wifi_manager {
+    () => {
+        crate::state::WIFI_MANAGER.try_lock().unwrap()
     };
 }
 
