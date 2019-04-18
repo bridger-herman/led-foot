@@ -170,6 +170,7 @@
     }
 
     function updateSchedule() {
+      console.log('update sched');
       let schedule = [];
       let scheduleElements = $('.schedule-element');
       scheduleElements.each(function (index, element) {
@@ -224,7 +225,13 @@
       ).append(
         $('<label/>', {text: 'Minute'})
       ).append(
-        $('<input/>', {value: data.days, class: 'days-input'})
+        $('<input/>', {
+          value: data.days,
+          class: 'days-input',
+          on: {
+            change: updateSchedule
+          }
+        })
       ).append(
         $('<label/>', {text: 'Days'})
       ).append(
