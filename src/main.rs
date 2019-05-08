@@ -14,6 +14,7 @@ extern crate serde_derive;
 extern crate net_sniffer;
 extern crate serde;
 extern crate serde_json;
+extern crate sunrise;
 
 #[macro_use]
 pub mod state;

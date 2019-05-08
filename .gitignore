@@ -6,3 +6,4 @@ Cargo.lock
 schedules
 nohup.out
 mac_addresses.txt
+lat_long.txt
