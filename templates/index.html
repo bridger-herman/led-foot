@@ -157,6 +157,7 @@
     }
 
     function loadSequence(name) {
+      console.log('setting ' + name);
       let data = {'name': name};
       $.ajax({
         type: 'POST',
@@ -248,7 +249,6 @@
           b: parseInt($('#input-range-blue').val()),
           w: parseInt($('#input-range-white').val()),
         };
-        console.log(data);
         $.ajax({
           type: 'POST',
           data: JSON.stringify(data, null, '\t'),

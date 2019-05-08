@@ -24,6 +24,8 @@ pub mod led_sequence;
 pub mod led_system;
 
 use std::{env, io};
+use std::collections::HashMap;
+use std::thread;
 
 use actix_files as fs;
 use actix_session::{CookieSession, Session};
@@ -46,6 +48,7 @@ fn set_rgbw(
         let color: Color =
             serde_json::from_str(std::str::from_utf8(&body).unwrap()).unwrap();
 
+        info!("Setting color {:?}", color);
         {
             let mut state = led_state!();
             state.changed_from_ui = state.active;
@@ -55,6 +58,30 @@ fn set_rgbw(
         led_state!().changed_from_ui = false;
 
         Ok(HttpResponse::Ok().json(color))
+    })
+}
+
+fn set_sequence(
+    payload: web::Payload,
+) -> impl Future<Item = HttpResponse, Error = Error> {
+    // Load the body
+    payload.concat2().from_err().and_then(|body| {
+        let data: HashMap<String, String> =
+            serde_json::from_str(std::str::from_utf8(&body).unwrap()).unwrap();
+
+        info!("Setting sequence {}", data["name"]);
+
+        {
+            let mut state = led_state!();
+            state.changed_from_ui = state.active;
+        }
+        led_system!().update_sequence(&data["name"]);
+        thread::spawn(move || {
+            led_system!().run_sequence();
+        });
+        led_state!().changed_from_ui = false;
+
+        Ok(HttpResponse::Ok().json(data))
     })
 }
 
@@ -95,6 +122,10 @@ fn main() -> io::Result<()> {
                 web::resource("/api/set-rgbw")
                     .route(web::post().to_async(set_rgbw)),
             )
+            .service(
+                web::resource("/api/set-sequence")
+                    .route(web::post().to_async(set_sequence)),
+            )
             // simple index
             .service(web::resource("/").to(
                 |_: HttpRequest| -> Result<HttpResponse> {
@@ -107,10 +138,10 @@ fn main() -> io::Result<()> {
     .bind("0.0.0.0:8000")?
     .start();
 
-    std::thread::spawn(move || loop {
+    thread::spawn(move || loop {
         led_schedule!().one_frame();
 
-        std::thread::sleep(std::time::Duration::from_secs(1));
+        thread::sleep(std::time::Duration::from_secs(1));
     });
 
     println!("Starting http server: 0.0.0.0:8000");
