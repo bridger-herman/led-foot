@@ -39,6 +39,7 @@ use actix_web::{
 use futures::{future::ok, Future, Stream};
 
 use crate::color::Color;
+use crate::led_scheduler::LedAlarm;
 
 fn set_rgbw(
     payload: web::Payload,
@@ -85,6 +86,23 @@ fn set_sequence(
     })
 }
 
+fn set_schedule(
+    payload: web::Payload,
+) -> impl Future<Item = HttpResponse, Error = Error> {
+    // Load the body
+    payload.concat2().from_err().and_then(|body| {
+        let data: Vec<LedAlarm> =
+            serde_json::from_str(std::str::from_utf8(&body).unwrap()).unwrap();
+
+        info!("Setting schedule");
+
+        led_schedule!().reset_alarms(&data);
+        led_schedule!().rewrite_schedule();
+
+        Ok(HttpResponse::Ok().json(data))
+    })
+}
+
 fn main() -> io::Result<()> {
     let log_level = ::std::env::args().filter(|item| item == "-v").count();
     let log_level = match log_level {
@@ -125,6 +143,10 @@ fn main() -> io::Result<()> {
             .service(
                 web::resource("/api/set-sequence")
                     .route(web::post().to_async(set_sequence)),
+            )
+            .service(
+                web::resource("/api/set-schedule")
+                    .route(web::post().to_async(set_schedule)),
             )
             // simple index
             .service(web::resource("/").to(
