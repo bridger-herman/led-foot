@@ -138,8 +138,8 @@
   "https://ajax.googleapis.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
 
   <script>
-    var initialColor = {{{current_color}}};
-    var allSequences = {{{sequences}}};
+    // var initialColor = {{{current_color}}};
+    // var allSequences = {{{sequences}}};
 
     // Relies on the
     //
@@ -243,11 +243,12 @@
       // Setup ajax POST requests to update RGBW leds
       $('.input-range-container input').on('change', function() {
         let data = {
-          r: $('#input-range-red').val(),
-          g: $('#input-range-green').val(),
-          b: $('#input-range-blue').val(),
-          w: $('#input-range-white').val(),
+          r: parseInt($('#input-range-red').val()),
+          g: parseInt($('#input-range-green').val()),
+          b: parseInt($('#input-range-blue').val()),
+          w: parseInt($('#input-range-white').val()),
         };
+        console.log(data);
         $.ajax({
           type: 'POST',
           data: JSON.stringify(data, null, '\t'),
@@ -257,10 +258,16 @@
 
       // Populate all the current color values from the server side
       // TODO this is here because Mustache won't recognize JSON for some reason
-      $('#input-range-red').val(initialColor.r);
-      $('#input-range-green').val(initialColor.g);
-      $('#input-range-blue').val(initialColor.b);
-      $('#input-range-white').val(initialColor.w);
+      // $('#input-range-red').val(initialColor.r);
+      // $('#input-range-green').val(initialColor.g);
+      // $('#input-range-blue').val(initialColor.b);
+      // $('#input-range-white').val(initialColor.w);
+      $('#input-range-red').val(0);
+      $('#input-range-green').val(0);
+      $('#input-range-blue').val(0);
+      $('#input-range-white').val(0);
+
+      let allSequences = ['./sequences/color_orange.png'];
 
       // Populate the favorites list
       for (let sequence in allSequences) {

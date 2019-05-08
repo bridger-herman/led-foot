@@ -4,7 +4,6 @@ extern crate simple_logger;
 #[macro_use]
 extern crate lazy_static;
 #[macro_use]
-extern crate nickel;
 extern crate chrono;
 extern crate png;
 extern crate rustc_serialize;
@@ -13,6 +12,8 @@ extern crate serial;
 extern crate serde_derive;
 extern crate serde;
 extern crate serde_json;
+#[macro_use]
+extern crate actix_web;
 
 #[macro_use]
 pub mod state;
@@ -22,20 +23,42 @@ pub mod led_scheduler;
 pub mod led_sequence;
 pub mod led_system;
 
-use std::collections::HashMap;
-use std::fs;
-use std::thread;
+use std::{env, io};
 
-use nickel::mimes::MediaType;
-use nickel::status::StatusCode;
-use nickel::JsonBody;
-use nickel::{HttpRouter, Nickel, StaticFilesHandler};
-use rustc_serialize::json;
+use actix_files as fs;
+use actix_session::{CookieSession, Session};
+use actix_web::http::{header, Method, StatusCode};
+use actix_web::{
+    error, guard, middleware, web, App, Error, HttpRequest, HttpResponse,
+    HttpServer, Result,
+};
+// use bytes::Bytes;
+// use futures::unsync::mpsc;
+use futures::{future::ok, Future, Stream};
 
 use crate::color::Color;
-use crate::led_scheduler::LedAlarm;
 
-fn main() {
+fn set_rgbw(
+    payload: web::Payload,
+) -> impl Future<Item = HttpResponse, Error = Error> {
+    // Load the body
+    payload.concat2().from_err().and_then(|body| {
+        let color: Color =
+            serde_json::from_str(std::str::from_utf8(&body).unwrap()).unwrap();
+
+        {
+            let mut state = led_state!();
+            state.changed_from_ui = state.active;
+        }
+        led_system!().update_color(&color);
+        led_system!().run_sequence();
+        led_state!().changed_from_ui = false;
+
+        Ok(HttpResponse::Ok().json(color))
+    })
+}
+
+fn main() -> io::Result<()> {
     let log_level = ::std::env::args().filter(|item| item == "-v").count();
     let log_level = match log_level {
         1 => ::log::Level::Info,
@@ -45,114 +68,51 @@ fn main() {
     };
     println!("Starting LED server with verbosity {:?}", log_level);
 
-    simple_logger::init_with_level(log_level).unwrap();
-    let mut server = Nickel::new();
+    let sys = actix_rt::System::new("led-foot");
 
-    server.utilize(StaticFilesHandler::new("sequences"));
+    HttpServer::new(|| {
+        App::new()
+            // enable logger
+            .wrap(middleware::Logger::default())
+            // cookie session middleware
+            .wrap(CookieSession::signed(&[0; 32]).secure(false))
+            // static files
+            .service(
+                fs::Files::new("/sequences", "sequences").show_files_listing(),
+            )
+            // api calls
+            .service(web::resource("/api/get-schedule").to(
+                |_: HttpRequest| -> Result<HttpResponse> {
+                    Ok(HttpResponse::build(StatusCode::OK)
+                        .content_type("application/json; charset=utf-8")
+                        .body(
+                            serde_json::to_string(&led_schedule!().alarms)
+                                .expect("Failed to encode schedule"),
+                        ))
+                },
+            ))
+            .service(
+                web::resource("/api/set-rgbw")
+                    .route(web::post().to_async(set_rgbw)),
+            )
+            // simple index
+            .service(web::resource("/").to(
+                |_: HttpRequest| -> Result<HttpResponse> {
+                    Ok(HttpResponse::build(StatusCode::OK)
+                        .content_type("text/html; charset=utf-8")
+                        .body(include_str!("../templates/index.html")))
+                },
+            ))
+    })
+    .bind("0.0.0.0:8000")?
+    .start();
 
-    // Render index.html with the current color values on the server
-    server.get(
-        "/",
-        middleware! { |_, mut response|
-            let mut template_data = HashMap::new();
-
-            let current_color = &led_system!().current_color;
-            template_data.insert("current_color", json::encode(&current_color).unwrap());
-            let dir_listing = fs::read_dir("./sequences").unwrap();
-            let sequences: Vec<String> = dir_listing.map(|entry| {
-                entry.unwrap().path().file_name().unwrap().to_str().unwrap().to_string()
-            }).collect();
-            template_data.insert("sequences", json::encode(&sequences).unwrap());
-
-            return response.render("templates/index.html", &template_data);
-        },
-    );
-
-    // Long polling API call for changing the current color preview
-    server.get(
-        "/api/get-rgbw",
-        middleware! { |_, mut response|
-            let returned =
-                json::encode(&led_system!().current_color.clone())
-                    .expect("Failed to encode color");
-            response.set(StatusCode::Ok);
-            response.set(MediaType::Json);
-            returned
-        },
-    );
-
-    server.get(
-        "/api/get-schedule",
-        middleware! { |_, mut response|
-            let returned = json::encode(&led_schedule!().alarms)
-                    .expect("Failed to encode schedule");
-            response.set(StatusCode::Ok);
-            response.set(MediaType::Json);
-            returned
-        },
-    );
-
-    server.post(
-        "/api/set-rgbw",
-        middleware! {
-            |request, mut response|
-            let color = request.json_as::<Color>().unwrap();
-            info!("Setting color {:?}", color);
-
-            {
-                let mut state = led_state!();
-                state.changed_from_ui = state.active;
-            }
-            led_system!().update_color(&color);
-            led_system!().run_sequence();
-            led_state!().changed_from_ui = false;
-
-            response.set(StatusCode::Ok);
-            format!("Setting color {:?}", color)
-        },
-    );
-
-    server.post(
-        "/api/set-sequence",
-        middleware! { |request, mut response|
-            let data = request.json_as::<HashMap<String, String>>().unwrap();
-            info!("Setting sequence {}", data["name"]);
-
-            {
-                let mut state = led_state!();
-                state.changed_from_ui = state.active;
-            }
-            led_system!().update_sequence(&format!("./sequences/{}", data["name"]));
-            thread::spawn(move || {
-                led_system!().run_sequence();
-            });
-            led_state!().changed_from_ui = false;
-
-            response.set(StatusCode::Ok);
-            format!("Setting sequence {}", data["name"])
-        },
-    );
-
-    server.post(
-        "/api/set-schedule",
-        middleware! { |request, mut response|
-            let data = request.json_as::<Vec<LedAlarm>>().unwrap();
-            info!("Setting schedule");
-            led_schedule!().reset_alarms(&data);
-            led_schedule!().rewrite_schedule();
-
-            response.set(StatusCode::Ok);
-            "Setting schedule".to_string()
-        },
-    );
-
-    server
-        .listen("0.0.0.0:8000")
-        .expect("Failed to serve")
-        .detach();
-    loop {
+    std::thread::spawn(move || loop {
         led_schedule!().one_frame();
 
-        std::thread::sleep(std::time::Duration::from_millis(500));
-    }
+        std::thread::sleep(std::time::Duration::from_secs(1));
+    });
+
+    println!("Starting http server: 0.0.0.0:8000");
+    sys.run()
 }

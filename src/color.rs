@@ -1,3 +1,4 @@
+use serde_derive::{Deserialize, Serialize};
 use std::ops::{Div, Sub};
 
 fn lerp_component(low: f32, high: f32, percent: f32) -> f32 {
@@ -5,7 +6,7 @@ fn lerp_component(low: f32, high: f32, percent: f32) -> f32 {
 }
 
 /// RGBW color
-#[derive(Clone, Debug, Default, PartialEq, RustcEncodable, RustcDecodable)]
+#[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
 pub struct Color {
     pub r: u8,
     pub g: u8,
