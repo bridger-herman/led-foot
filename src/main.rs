@@ -3,7 +3,6 @@ extern crate log;
 extern crate simple_logger;
 #[macro_use]
 extern crate lazy_static;
-#[macro_use]
 extern crate chrono;
 extern crate png;
 extern crate rustc_serialize;
@@ -12,7 +11,6 @@ extern crate serial;
 extern crate serde_derive;
 extern crate serde;
 extern crate serde_json;
-#[macro_use]
 extern crate actix_web;
 
 #[macro_use]
@@ -23,20 +21,16 @@ pub mod led_scheduler;
 pub mod led_sequence;
 pub mod led_system;
 
-use std::{env, io};
 use std::collections::HashMap;
+use std::io;
 use std::thread;
 
-use actix_files as fs;
-use actix_session::{CookieSession, Session};
-use actix_web::http::{header, Method, StatusCode};
+use actix_session::CookieSession;
+use actix_web::http::StatusCode;
 use actix_web::{
-    error, guard, middleware, web, App, Error, HttpRequest, HttpResponse,
-    HttpServer, Result,
+    middleware, web, App, Error, HttpRequest, HttpResponse, HttpServer, Result,
 };
-// use bytes::Bytes;
-// use futures::unsync::mpsc;
-use futures::{future::ok, Future, Stream};
+use futures::{Future, Stream};
 
 use crate::color::Color;
 use crate::led_scheduler::LedAlarm;
@@ -123,7 +117,8 @@ fn main() -> io::Result<()> {
             .wrap(CookieSession::signed(&[0; 32]).secure(false))
             // static files
             .service(
-                fs::Files::new("/sequences", "sequences").show_files_listing(),
+                actix_files::Files::new("/sequences", "sequences")
+                    .show_files_listing(),
             )
             // api calls
             .service(web::resource("/api/get-schedule").to(
@@ -133,6 +128,33 @@ fn main() -> io::Result<()> {
                         .body(
                             serde_json::to_string(&led_schedule!().alarms)
                                 .expect("Failed to encode schedule"),
+                        ))
+                },
+            ))
+            .service(web::resource("/api/get-rgbw").to(
+                |_: HttpRequest| -> Result<HttpResponse> {
+                    Ok(HttpResponse::build(StatusCode::OK)
+                        .content_type("application/json; charset=utf-8")
+                        .body(
+                            serde_json::to_string(&led_system!().current_color)
+                                .expect("Failed to encode color"),
+                        ))
+                },
+            ))
+            .service(web::resource("/api/get-sequences").to(
+                |_: HttpRequest| -> Result<HttpResponse> {
+                    let dir_listing =
+                        ::std::fs::read_dir("./sequences").unwrap();
+                    let sequences: Vec<String> = dir_listing
+                        .map(|entry| {
+                            entry.unwrap().path().to_str().unwrap().to_string()
+                        })
+                        .collect();
+                    Ok(HttpResponse::build(StatusCode::OK)
+                        .content_type("application/json; charset=utf-8")
+                        .body(
+                            serde_json::to_string(&sequences)
+                                .expect("Failed to encode sequences"),
                         ))
                 },
             ))
