@@ -154,7 +154,6 @@
     }
 
     function loadSequence(name) {
-      console.log('setting ' + name);
       let data = {'name': name};
       $.ajax({
         type: 'POST',
@@ -168,7 +167,6 @@
     }
 
     function updateSchedule() {
-      console.log('update sched');
       let schedule = [];
       let scheduleElements = $('.schedule-element');
       scheduleElements.each(function (index, element) {
@@ -179,7 +177,7 @@
           days: days.split(','),
           hour: hour,
           minute: minute,
-          sequence: 'gradient_sunrise2_600.png', // TODO hardcoded for now
+          sequence: $(element).find('img').attr('src'),
         });
       });
 

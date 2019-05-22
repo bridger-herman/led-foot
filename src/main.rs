@@ -9,9 +9,9 @@ extern crate rustc_serialize;
 extern crate serial;
 #[macro_use]
 extern crate serde_derive;
+extern crate actix_web;
 extern crate serde;
 extern crate serde_json;
-extern crate actix_web;
 
 #[macro_use]
 pub mod state;
@@ -106,6 +106,7 @@ fn main() -> io::Result<()> {
         _ => ::log::Level::Warn,
     };
     println!("Starting LED server with verbosity {:?}", log_level);
+    simple_logger::init_with_level(log_level).expect("Unable to initalize log");
 
     let sys = actix_rt::System::new("led-foot");
 

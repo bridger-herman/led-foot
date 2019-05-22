@@ -118,7 +118,10 @@ impl LedSequence {
             unreachable!("Incorrect first token in png file name");
         };
 
-        let decoder = png::Decoder::new(File::open(img_path).unwrap());
+        let decoder =
+            png::Decoder::new(File::open(img_path).unwrap_or_else(|_| {
+                panic!("Unable to open sequence file {:?}", img_path)
+            }));
         let (png_info, mut reader) = decoder.read_info().unwrap();
         let mut buf = vec![0; png_info.buffer_size()];
         reader.next_frame(&mut buf).unwrap();

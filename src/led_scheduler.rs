@@ -86,10 +86,7 @@ impl LedScheduler {
                             let mut state = led_state!();
                             state.changed_from_ui = state.active;
                         }
-                        led_system!().update_sequence(&format!(
-                            "./sequences/{}",
-                            alarm.sequence
-                        ));
+                        led_system!().update_sequence(&alarm.sequence);
                         led_system!().run_sequence();
                         led_state!().changed_from_ui = false;
                         self.current_active = Some(alarm.clone());
