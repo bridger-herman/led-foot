@@ -1,0 +1,3 @@
+[submodule "led-foot-sequences"]
+	path = led-foot-sequences
+	url = https://github.com/bridger-herman/led-foot-sequences.git

@@ -118,7 +118,7 @@ fn main() -> io::Result<()> {
             .wrap(CookieSession::signed(&[0; 32]).secure(false))
             // static files
             .service(
-                actix_files::Files::new("/sequences", "sequences")
+                actix_files::Files::new("/led-foot-sequences", "led-foot-sequences")
                     .show_files_listing(),
             )
             // api calls
@@ -145,11 +145,12 @@ fn main() -> io::Result<()> {
             .service(web::resource("/api/get-sequences").to(
                 |_: HttpRequest| -> Result<HttpResponse> {
                     let dir_listing =
-                        ::std::fs::read_dir("./sequences").unwrap();
+                        ::std::fs::read_dir("./led-foot-sequences").unwrap();
                     let sequences: Vec<String> = dir_listing
                         .map(|entry| {
                             entry.unwrap().path().to_str().unwrap().to_string()
                         })
+                        .filter(|path_string| path_string.ends_with(".png"))
                         .collect();
                     Ok(HttpResponse::build(StatusCode::OK)
                         .content_type("application/json; charset=utf-8")
@@ -180,7 +181,7 @@ fn main() -> io::Result<()> {
                 },
             ))
     })
-    .bind("0.0.0.0:8000")?
+    .bind("0.0.0.0:5000")?
     .start();
 
     thread::spawn(move || loop {
@@ -189,6 +190,6 @@ fn main() -> io::Result<()> {
         thread::sleep(std::time::Duration::from_secs(1));
     });
 
-    println!("Starting http server: 0.0.0.0:8000");
+    println!("Starting http server: 0.0.0.0:5000");
     sys.run()
 }
