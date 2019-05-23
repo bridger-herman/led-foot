@@ -91,6 +91,13 @@ impl LedSystem {
                     self.current_color.w
                 );
                 if let Some(ref mut ser) = self.serial {
+                    trace!(
+                        "{}, {}, {}, {}",
+                        self.current_color.r,
+                        self.current_color.g,
+                        self.current_color.b,
+                        self.current_color.w
+                    );
                     // Send the color
                     let write_bytes: [u8; 5] =
                         <[u8; 5]>::from(&self.current_color);

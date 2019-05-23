@@ -198,10 +198,27 @@ impl LedSequence {
         self
     }
 
-    /// Cuts out values <= 1 and makes them 0 to avoid color stuttering
+    /// Use a median filter to eliminate noise, consuming self
+    ///
+    /// Useful for gradients from png images, which tend to have noise
+    /// Also cuts out values <= 1 and makes them 0 to avoid color stuttering
     fn smooth_colors(mut self) -> Self {
-        let new_colors_without_ones = self
-            .colors
+        const FILTER_SIZE: usize = 51;
+        let mut r_filter = median::Filter::new(FILTER_SIZE);
+        let mut g_filter = median::Filter::new(FILTER_SIZE);
+        let mut b_filter = median::Filter::new(FILTER_SIZE);
+        let mut w_filter = median::Filter::new(FILTER_SIZE);
+
+        let mut new_colors = VecDeque::with_capacity(self.colors.len());
+        for color in self.colors {
+            let new_r = r_filter.consume(color.r);
+            let new_g = g_filter.consume(color.g);
+            let new_b = b_filter.consume(color.b);
+            let new_w = w_filter.consume(color.w);
+            new_colors.push_back(Color::new(new_r, new_g, new_b, new_w));
+        }
+
+        let new_colors_without_ones = new_colors
             .into_iter()
             .filter(|color| !color.any_value(1))
             .collect();

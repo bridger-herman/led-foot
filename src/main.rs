@@ -1,11 +1,11 @@
 #[macro_use]
 extern crate log;
 extern crate simple_logger;
+extern crate median;
 #[macro_use]
 extern crate lazy_static;
 extern crate chrono;
 extern crate png;
-extern crate rustc_serialize;
 extern crate serial;
 #[macro_use]
 extern crate serde_derive;
