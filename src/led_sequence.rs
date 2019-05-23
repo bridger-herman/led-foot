@@ -122,7 +122,7 @@ impl LedSequence {
             png::Decoder::new(File::open(img_path).unwrap_or_else(|_| {
                 panic!("Unable to open sequence file {:?}", img_path)
             }));
-        let (png_info, mut reader) = decoder.read_info().unwrap();
+        let (png_info, mut reader) = decoder.read_info().expect("Unable to decode png");
         let mut buf = vec![0; png_info.buffer_size()];
         reader.next_frame(&mut buf).unwrap();
 

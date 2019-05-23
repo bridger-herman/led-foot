@@ -6,7 +6,7 @@ edition = "2018"
 
 [dependencies]
 lazy_static = "1.2"
-png = "0.13"
+png = "0.14"
 rustc-serialize = "0.3"
 serial = "0.4"
 log = "0.4"
