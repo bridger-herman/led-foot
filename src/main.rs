@@ -20,6 +20,7 @@ pub mod color;
 pub mod led_scheduler;
 pub mod led_sequence;
 pub mod led_system;
+pub mod serial_manager;
 
 use std::collections::HashMap;
 use std::io;
@@ -107,6 +108,8 @@ fn main() -> io::Result<()> {
     };
     println!("Starting LED server with verbosity {:?}", log_level);
     simple_logger::init_with_level(log_level).expect("Unable to initalize log");
+
+    serial_manager!().setup();
 
     let sys = actix_rt::System::new("led-foot");
 
