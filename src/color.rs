@@ -1,5 +1,5 @@
 use serde_derive::{Deserialize, Serialize};
-use std::ops::{Div, Sub};
+use std::ops::{Add, Div, Mul, Sub};
 
 fn lerp_component(low: f32, high: f32, percent: f32) -> f32 {
     (high - low) * percent + low
@@ -135,6 +135,19 @@ impl Sub for FloatColor {
     }
 }
 
+impl Add for FloatColor {
+    type Output = Self;
+
+    fn add(self, other: Self) -> Self {
+        Self {
+            r: self.r + other.r,
+            g: self.g + other.g,
+            b: self.b + other.b,
+            w: self.w + other.w,
+        }
+    }
+}
+
 impl Div<f32> for FloatColor {
     type Output = Self;
 
@@ -144,6 +157,19 @@ impl Div<f32> for FloatColor {
             g: self.g / scalar,
             b: self.b / scalar,
             w: self.w / scalar,
+        }
+    }
+}
+
+impl Mul<f32> for FloatColor {
+    type Output = Self;
+
+    fn mul(self, scalar: f32) -> Self {
+        Self {
+            r: self.r * scalar,
+            g: self.g * scalar,
+            b: self.b * scalar,
+            w: self.w * scalar,
         }
     }
 }

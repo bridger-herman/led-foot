@@ -1,12 +1,12 @@
 use std::io::{Read, Write};
 use std::path::Path;
 use std::thread::sleep;
-use std::time::Duration;
+use std::time::{Duration, Instant};
 
 use serial::{SerialPort, SystemPort};
 
 use crate::color::Color;
-use crate::led_sequence::LedSequence;
+use crate::led_sequence::{LedSequence, RESOLUTION};
 
 /// Controls the RGBW LEDs
 pub struct LedSystem {
@@ -74,30 +74,41 @@ impl LedSystem {
     pub fn run_sequence(&mut self) {
         led_state!().active = true;
         if let Some(ref mut seq) = self.current_sequence {
+            let start = Instant::now();
+            let mut previous_time = Instant::now();
+            let mut current_time = Instant::now();
+            let mut total_error = Duration::from_millis(0);
             for (i, (delay, color)) in seq.enumerate() {
+                let diff = current_time - previous_time;
+                let error = diff
+                    .checked_sub(Duration::from_millis(
+                        (1000.0 / RESOLUTION) as u64,
+                    ))
+                    .unwrap_or_default();
+                total_error += error;
                 if led_state!().changed_from_ui {
                     info!("interrupting");
                     break;
                 }
-                sleep(Duration::from_millis((delay * 1000.0) as u64));
+                let sleep_duration =
+                    Duration::from_millis((delay * 1000.0) as u64)
+                        .checked_sub(total_error)
+                        .unwrap_or_default();
+                debug!("Sleeping for {:?}", sleep_duration);
+                sleep(sleep_duration);
                 self.current_color = color;
 
                 debug!(
-                    "{} - {}, {}, {}, {}",
+                    "{} - {}, {}, {}, {} ({:.2})",
                     i,
                     self.current_color.r,
                     self.current_color.g,
                     self.current_color.b,
-                    self.current_color.w
+                    self.current_color.w,
+                    delay,
                 );
+                debug!("{:?}, {:?}", diff, total_error);
                 if let Some(ref mut ser) = self.serial {
-                    trace!(
-                        "{}, {}, {}, {}",
-                        self.current_color.r,
-                        self.current_color.g,
-                        self.current_color.b,
-                        self.current_color.w
-                    );
                     // Send the color
                     let write_bytes: [u8; 5] =
                         <[u8; 5]>::from(&self.current_color);
@@ -124,7 +135,10 @@ impl LedSystem {
                         "#".repeat(80),
                     );
                 }
+                previous_time = current_time;
+                current_time = Instant::now();
             }
+            debug!("Time: {}", start.elapsed().as_secs());
         }
         led_state!().active = false;
     }

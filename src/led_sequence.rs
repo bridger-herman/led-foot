@@ -5,10 +5,10 @@ use std::path::Path;
 use crate::color::{Color, FloatColor};
 
 /// 30 "frames" per second for smoothness
-const RESULUTION: f32 = 30.0;
+pub const RESOLUTION: f32 = 30.0;
 
 /// How long the initial fade between sequences should be
-const DURATION: f32 = 0.5;
+const FADE_DURATION: f32 = 0.5;
 
 /// Median filter size for initial
 const MEDIAN_FILTER_SIZE: usize = 51;
@@ -45,12 +45,12 @@ impl LedSequence {
             <FloatColor>::from(end_color),
         );
 
-        let mut colors = VecDeque::with_capacity(RESULUTION as usize);
-        let mut delays = VecDeque::with_capacity(RESULUTION as usize);
+        let mut colors = VecDeque::with_capacity(RESOLUTION as usize);
+        let mut delays = VecDeque::with_capacity(RESOLUTION as usize);
 
-        for i in 0..=(RESULUTION as usize) {
-            let percent = i as f32 / RESULUTION;
-            delays.push_back(DURATION / RESULUTION);
+        for i in 0..(RESOLUTION as usize) {
+            let percent = i as f32 / RESOLUTION;
+            delays.push_back(FADE_DURATION / RESOLUTION);
             colors.push_back(<Color>::from(
                 &start_color.lerp(&end_color, percent),
             ));
@@ -62,7 +62,7 @@ impl LedSequence {
             info: LedSequenceInfo {
                 sequence_type: LedSequenceType::Color,
                 name: "lerp".to_string(),
-                duration: DURATION,
+                duration: FADE_DURATION,
                 repeat: false,
             },
             index: 0,
@@ -147,7 +147,8 @@ impl LedSequence {
                     VecDeque::with_capacity(png_info.width as usize);
                 let mut delays =
                     VecDeque::with_capacity(png_info.width as usize);
-                let delay = info.duration / png_info.width as f32;
+                // let delay = info.duration / png_info.width as f32;
+                let delay = 1.0 / RESOLUTION;
                 for i in (0..(png_info.width as usize * 3)).step_by(3) {
                     let color_i = Color::new(
                         buf[i],
@@ -166,7 +167,9 @@ impl LedSequence {
                     index: 0,
                     repeat_start: 0,
                 }
-                .smooth_colors();
+                .smooth_colors()
+                .resample();
+
                 let initial_fade =
                     Self::from_color_lerp(fade_from, &sequence.colors[0])
                         .with_delay(delay);
@@ -201,6 +204,46 @@ impl LedSequence {
             inf.duration = self.info.duration + other.info.duration;
             inf
         };
+        self
+    }
+
+    /// Downsample (or upsample) the gradient so it is smooth (say, 30 frames
+    /// per second)
+    ///
+    /// Uses a tent filter to obtain a resampled gradient
+    fn resample(mut self) -> Self {
+        let filter_size =
+            (self.colors.len() / self.info.duration as usize) as isize;
+        let num_samples = RESOLUTION * self.info.duration;
+
+        let mut new_colors = VecDeque::with_capacity(num_samples as usize);
+        let mut new_delays = VecDeque::with_capacity(num_samples as usize);
+
+        for i in 0..(num_samples as usize) {
+            let percent = i as f32 / num_samples;
+            let center_index = (percent * (self.colors.len() as f32)) as isize;
+
+            let mut sum = FloatColor::from(&Color::new(0, 0, 0, 0));
+            let mut counted = 0;
+            for filter_index in (-filter_size / 2)..(filter_size / 2) {
+                // Absolute value function to mimic tent
+                let tent_value =
+                    ((filter_index * 2) as f32 / filter_size as f32).abs();
+
+                let png_index = filter_index + center_index;
+                if png_index >= 0 && png_index < self.colors.len() as isize {
+                    sum = sum
+                        + FloatColor::from(&self.colors[png_index as usize])
+                            * tent_value;
+                    counted += 1;
+                }
+            }
+            let avg = sum / counted as f32;
+            new_colors.push_back(Color::from(&avg));
+            new_delays.push_back(1.0 / RESOLUTION);
+        }
+        self.colors = new_colors;
+        self.delays = new_delays;
         self
     }
 
@@ -239,7 +282,6 @@ impl Iterator for &mut LedSequence {
     fn next(&mut self) -> Option<Self::Item> {
         if self.index >= self.delays.len() || self.index >= self.colors.len() {
             if self.info.repeat {
-                debug!("Looped!");
                 self.index = self.repeat_start;
             } else {
                 return None;
