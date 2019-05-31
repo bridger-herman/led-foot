@@ -4,9 +4,14 @@ use std::path::Path;
 
 use crate::color::{Color, FloatColor};
 
-// 60 "frames" per second for smoothness
+/// 30 "frames" per second for smoothness
 const RESULUTION: f32 = 30.0;
+
+/// How long the initial fade between sequences should be
 const DURATION: f32 = 0.5;
+
+/// Median filter size for initial
+const MEDIAN_FILTER_SIZE: usize = 51;
 
 #[derive(Debug, Clone)]
 pub enum LedSequenceType {
@@ -130,19 +135,19 @@ impl LedSequence {
         let first_white_index = 3
             * png_info.width as usize
             * (png_info.height as usize / 2) as usize;
-        let first_color =
-            Color::new(buf[0], buf[1], buf[2], buf[first_white_index]);
-
-        let initial_fade = Self::from_color_lerp(fade_from, &first_color);
 
         match info.sequence_type {
-            LedSequenceType::Color => initial_fade,
+            LedSequenceType::Color => {
+                let first_color =
+                    Color::new(buf[0], buf[1], buf[2], buf[first_white_index]);
+                Self::from_color_lerp(fade_from, &first_color)
+            }
             LedSequenceType::Gradient => {
                 let mut colors =
                     VecDeque::with_capacity(png_info.width as usize);
                 let mut delays =
                     VecDeque::with_capacity(png_info.width as usize);
-                let delay = (3.0 * info.duration) / png_info.width as f32;
+                let delay = info.duration / png_info.width as f32;
                 for i in (0..(png_info.width as usize * 3)).step_by(3) {
                     let color_i = Color::new(
                         buf[i],
@@ -204,11 +209,10 @@ impl LedSequence {
     /// Useful for gradients from png images, which tend to have noise
     /// Also cuts out values <= 1 and makes them 0 to avoid color stuttering
     fn smooth_colors(mut self) -> Self {
-        const FILTER_SIZE: usize = 51;
-        let mut r_filter = median::Filter::new(FILTER_SIZE);
-        let mut g_filter = median::Filter::new(FILTER_SIZE);
-        let mut b_filter = median::Filter::new(FILTER_SIZE);
-        let mut w_filter = median::Filter::new(FILTER_SIZE);
+        let mut r_filter = median::Filter::new(MEDIAN_FILTER_SIZE);
+        let mut g_filter = median::Filter::new(MEDIAN_FILTER_SIZE);
+        let mut b_filter = median::Filter::new(MEDIAN_FILTER_SIZE);
+        let mut w_filter = median::Filter::new(MEDIAN_FILTER_SIZE);
 
         let mut new_colors = VecDeque::with_capacity(self.colors.len());
         for color in self.colors {
