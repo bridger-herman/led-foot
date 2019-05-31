@@ -78,28 +78,23 @@ impl LedSystem {
             let mut previous_time = Instant::now();
             let mut current_time = Instant::now();
             let mut total_error = Duration::from_millis(0);
-            for (i, (delay, color)) in seq.enumerate() {
+            for (i, color) in seq.enumerate() {
                 let diff = current_time - previous_time;
-                let error = diff
-                    .checked_sub(Duration::from_millis(
-                        (1000.0 / RESOLUTION) as u64,
-                    ))
-                    .unwrap_or_default();
+                let delay = Duration::from_millis((1000.0 / RESOLUTION) as u64);
+                let error = diff.checked_sub(delay).unwrap_or_default();
                 total_error += error;
                 if led_state!().changed_from_ui {
                     info!("interrupting");
                     break;
                 }
                 let sleep_duration =
-                    Duration::from_millis((delay * 1000.0) as u64)
-                        .checked_sub(total_error)
-                        .unwrap_or_default();
+                    delay.checked_sub(total_error).unwrap_or_default();
                 debug!("Sleeping for {:?}", sleep_duration);
                 sleep(sleep_duration);
                 self.current_color = color;
 
                 debug!(
-                    "{} - {}, {}, {}, {} ({:.2})",
+                    "{} - {}, {}, {}, {} ({:?})",
                     i,
                     self.current_color.r,
                     self.current_color.g,
