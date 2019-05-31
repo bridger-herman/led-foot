@@ -122,7 +122,8 @@ impl LedSequence {
             png::Decoder::new(File::open(img_path).unwrap_or_else(|_| {
                 panic!("Unable to open sequence file {:?}", img_path)
             }));
-        let (png_info, mut reader) = decoder.read_info().expect("Unable to decode png");
+        let (png_info, mut reader) =
+            decoder.read_info().expect("Unable to decode png");
         let mut buf = vec![0; png_info.buffer_size()];
         reader.next_frame(&mut buf).unwrap();
 
@@ -218,9 +219,10 @@ impl LedSequence {
             new_colors.push_back(Color::new(new_r, new_g, new_b, new_w));
         }
 
+        // Change all the ones to zeros
         let new_colors_without_ones = new_colors
             .into_iter()
-            .filter(|color| !color.any_value(1))
+            .map(|color| color.replace_components(1, 0))
             .collect();
         self.colors = new_colors_without_ones;
         self
@@ -233,6 +235,7 @@ impl Iterator for &mut LedSequence {
     fn next(&mut self) -> Option<Self::Item> {
         if self.index >= self.delays.len() || self.index >= self.colors.len() {
             if self.info.repeat {
+                debug!("Looped!");
                 self.index = self.repeat_start;
             } else {
                 return None;

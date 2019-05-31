@@ -1,7 +1,7 @@
 #[macro_use]
 extern crate log;
-extern crate simple_logger;
 extern crate median;
+extern crate simple_logger;
 #[macro_use]
 extern crate lazy_static;
 extern crate chrono;
@@ -118,8 +118,11 @@ fn main() -> io::Result<()> {
             .wrap(CookieSession::signed(&[0; 32]).secure(false))
             // static files
             .service(
-                actix_files::Files::new("/led-foot-sequences", "led-foot-sequences")
-                    .show_files_listing(),
+                actix_files::Files::new(
+                    "/led-foot-sequences",
+                    "led-foot-sequences",
+                )
+                .show_files_listing(),
             )
             // api calls
             .service(web::resource("/api/get-schedule").to(

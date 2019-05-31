@@ -6,9 +6,7 @@ use serde_json;
 
 const SCHEDULE_FILE: &str = "schedules/schedule.json";
 
-#[derive(
-    Debug, Serialize, Deserialize, Clone,
-)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct LedAlarm {
     days: Vec<String>,
     hour: String,

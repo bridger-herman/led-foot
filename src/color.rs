@@ -44,6 +44,23 @@ impl Color {
             || value_into_u8 == self.b
             || value_into_u8 == self.w
     }
+
+    /// Replace any component that has a particular value
+    pub fn replace_components(mut self, value: u8, replace_with: u8) -> Self {
+        if self.r == value {
+            self.r = replace_with;
+        }
+        if self.g == value {
+            self.g = replace_with;
+        }
+        if self.b == value {
+            self.b = replace_with;
+        }
+        if self.w == value {
+            self.w = replace_with;
+        }
+        self
+    }
 }
 
 impl From<&Color> for [u8; 5] {
