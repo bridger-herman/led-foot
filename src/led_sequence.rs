@@ -4,7 +4,7 @@ use std::path::Path;
 
 use crate::color::{Color, FloatColor};
 
-/// 30 "frames" per second for smoothness
+/// 60 "frames" per second for smoothness
 pub const RESOLUTION: f32 = 60.0;
 
 /// How long the initial fade between sequences should be
@@ -191,9 +191,9 @@ impl LedSequence {
     ///
     /// Uses a tent filter to obtain a resampled gradient
     fn resample(mut self) -> Self {
-        let filter_size =
-            (self.colors.len() / self.info.duration as usize) as isize;
         let num_samples = RESOLUTION * self.info.duration;
+        let filter_size =
+            (self.colors.len() as f32 / num_samples.round()).round() as isize;
 
         let mut new_colors = VecDeque::with_capacity(num_samples as usize);
 
@@ -216,7 +216,7 @@ impl LedSequence {
                     counted += 1;
                 }
             }
-            let avg = sum / counted as f32;
+            let avg = sum / (counted as f32 / 2.0);
             new_colors.push_back(Color::from(&avg));
         }
         self.colors = new_colors;
