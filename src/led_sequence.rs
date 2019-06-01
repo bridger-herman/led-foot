@@ -2,10 +2,10 @@ use std::collections::VecDeque;
 use std::fs::File;
 use std::path::Path;
 
-use crate::color::{Color, FloatColor};
+use crate::color::Color;
 
-/// 60 "frames" per second for smoothness
-pub const RESOLUTION: f32 = 60.0;
+/// 30 "frames" per second for smoothness
+pub const RESOLUTION: f32 = 30.0;
 
 /// How long the initial fade between sequences should be
 const FADE_DURATION: f32 = 0.5;
@@ -39,18 +39,11 @@ impl LedSequence {
     /// Linearly interpolate between two colors, for the default duration and
     /// resolution
     pub fn from_color_lerp(start_color: &Color, end_color: &Color) -> Self {
-        let (start_color, end_color) = (
-            <FloatColor>::from(start_color),
-            <FloatColor>::from(end_color),
-        );
-
         let mut colors = VecDeque::with_capacity(RESOLUTION as usize);
 
-        for i in 0..(RESOLUTION as usize) {
+        for i in 0..=(RESOLUTION as usize) {
             let percent = i as f32 / RESOLUTION;
-            colors.push_back(<Color>::from(
-                &start_color.lerp(&end_color, percent),
-            ));
+            colors.push_back(start_color.lerp(&end_color, percent));
         }
 
         Self {
@@ -134,20 +127,22 @@ impl LedSequence {
 
         match info.sequence_type {
             LedSequenceType::Color => {
-                let first_color =
-                    Color::new(buf[0], buf[1], buf[2], buf[first_white_index]);
+                let raw_color =
+                    [buf[0], buf[1], buf[2], buf[first_white_index]];
+                let first_color = Color::from(&raw_color);
                 Self::from_color_lerp(fade_from, &first_color)
             }
             LedSequenceType::Gradient => {
                 let mut colors =
                     VecDeque::with_capacity(png_info.width as usize);
                 for i in (0..(png_info.width as usize * 3)).step_by(3) {
-                    let color_i = Color::new(
+                    let raw_color = [
                         buf[i],
                         buf[i + 1],
                         buf[i + 2],
                         buf[i + first_white_index],
-                    );
+                    ];
+                    let color_i = Color::from(&raw_color);
                     colors.push_back(color_i);
                 }
 
@@ -195,13 +190,16 @@ impl LedSequence {
         let filter_size =
             (self.colors.len() as f32 / num_samples.round()).round() as isize;
 
+        // Hack to allow upsampling
+        let filter_size = if filter_size < 3 { 3 } else { filter_size };
+
         let mut new_colors = VecDeque::with_capacity(num_samples as usize);
 
         for i in 0..(num_samples as usize) {
             let percent = i as f32 / num_samples;
             let center_index = (percent * (self.colors.len() as f32)) as isize;
 
-            let mut sum = FloatColor::from(&Color::new(0, 0, 0, 0));
+            let mut sum = Color::default();
             let mut counted = 0;
             for filter_index in (-filter_size / 2)..(filter_size / 2) {
                 // Absolute value function to mimic tent
@@ -211,13 +209,12 @@ impl LedSequence {
                 let png_index = filter_index + center_index;
                 if png_index >= 0 && png_index < self.colors.len() as isize {
                     sum = sum
-                        + FloatColor::from(&self.colors[png_index as usize])
-                            * tent_value;
+                        + self.colors[png_index as usize].clone() * tent_value;
                     counted += 1;
                 }
             }
             let avg = sum / (counted as f32 / 2.0);
-            new_colors.push_back(Color::from(&avg));
+            new_colors.push_back(avg.clamped());
         }
         self.colors = new_colors;
         self
@@ -242,12 +239,7 @@ impl LedSequence {
             new_colors.push_back(Color::new(new_r, new_g, new_b, new_w));
         }
 
-        // Change all the ones to zeros
-        let new_colors_without_ones = new_colors
-            .into_iter()
-            .map(|color| color.replace_components(1, 0))
-            .collect();
-        self.colors = new_colors_without_ones;
+        self.colors = new_colors;
         self
     }
 }

@@ -45,12 +45,15 @@ impl LedSystem {
                 }
                 let sleep_duration =
                     delay.checked_sub(total_error).unwrap_or_default();
-                debug!("Sleeping for {:?}", sleep_duration);
+                debug!(
+                    "Sleeping for {:?} (total error {:?})",
+                    sleep_duration, total_error
+                );
                 sleep(sleep_duration);
                 self.current_color = color;
 
                 debug!(
-                    "{} - {}, {}, {}, {} ({:?})",
+                    "Iteration {} - {}, {}, {}, {} ({:?})",
                     i,
                     self.current_color.r,
                     self.current_color.g,
@@ -58,14 +61,13 @@ impl LedSystem {
                     self.current_color.w,
                     delay,
                 );
-                debug!("{:?}, {:?}", diff, total_error);
 
                 serial_manager!().send_color(&self.current_color);
 
                 previous_time = current_time;
                 current_time = Instant::now();
             }
-            debug!("Time: {}", start.elapsed().as_secs());
+            debug!("Time: {:?}", start.elapsed());
         }
         led_state!().active = false;
     }

@@ -32,20 +32,22 @@ impl SerialManager {
     /// be run before anything else
     pub fn setup(&mut self) {
         if let Some(ref mut ser) = self.serial {
+            debug!("Setting up serial");
             // Read the initial statement "I\r\n" that the Arduino sends
             let mut read_buf: [u8; 3] = [0; 3];
             ser.read_exact(&mut read_buf)
                 .expect("Couldn't read initializer bytes");
 
             // Send the default color
-            let write_bytes: [u8; 5] =
-                <[u8; 5]>::from(&led_system!().current_color);
+            let write_bytes: [u8; 6] =
+                <[u8; 6]>::from(&led_system!().current_color);
             ser.write_all(&write_bytes).expect("Couldn't write default");
 
             // Receive confirmation bytes "C\r\n"
             let mut read_buf: [u8; 3] = [0; 3];
             ser.read_exact(&mut read_buf)
                 .expect("Couldn't read initial confirmation");
+            debug!("Received setup confirmation");
         }
     }
 
@@ -53,7 +55,8 @@ impl SerialManager {
     pub fn send_color(&mut self, color: &Color) {
         if let Some(ref mut ser) = self.serial {
             // Send the color
-            let write_bytes: [u8; 5] = <[u8; 5]>::from(color);
+            let write_bytes: [u8; 6] = <[u8; 6]>::from(color);
+            debug!("sending bytes: {:?}", write_bytes);
             ser.write_all(&write_bytes)
                 .expect("Couldn't write color bytes");
 
@@ -93,5 +96,35 @@ impl Default for SerialManager {
                 }
             },
         }
+    }
+}
+
+/// Convert to the format that the Arduino is expecting
+impl From<&Color> for [u8; 6] {
+    fn from(color: &Color) -> [u8; 6] {
+        let color = color.clone().clamped();
+
+        // Convert red and green to 16 bit integers (because they have the most
+        // effect on luminance)
+        let red_int = (color.r * f32::from(<u16>::max_value())).round() as u16;
+        let red_byte1 = ((red_int & 0xff00) >> 8) as u8;
+        let red_byte2 = (red_int & 0x00ff) as u8;
+
+        let green_int =
+            (color.g * f32::from(<u16>::max_value())).round() as u16;
+        let green_byte1 = ((green_int & 0xff00) >> 8) as u8;
+        let green_byte2 = (green_int & 0x00ff) as u8;
+
+        let blue_byte = (color.b * f32::from(<u8>::max_value())).round() as u8;
+        let white_byte = (color.w * f32::from(<u8>::max_value())).round() as u8;
+
+        [
+            red_byte1,
+            red_byte2,
+            green_byte1,
+            green_byte2,
+            blue_byte,
+            white_byte,
+        ]
     }
 }
