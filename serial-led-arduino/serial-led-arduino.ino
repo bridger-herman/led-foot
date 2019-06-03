@@ -1,7 +1,7 @@
-#define BLUE 11
 #define RED 10
 #define GREEN 9
-#define WHITE 3
+#define BLUE 6
+#define WHITE 5
 #define MAX_VALUE 255
 
 #define NUMPINS 4
@@ -16,7 +16,7 @@ int bytesRead = 0;
 // L = 0.21*R + 0.72*G + 0.072*B
 /* Configure digital pins 9 and 10 as 16-bit PWM outputs. */
 void setupPWM16() {
-    //DDRB |= _BV(PB1) | _BV(PB2);        /* set pins as outputs */
+    DDRB |= _BV(PB1) | _BV(PB2);        /* set pins as outputs */
     TCCR1A = _BV(COM1A1) | _BV(COM1B1)  /* non-inverting PWM */
         | _BV(WGM11);                   /* mode 14: fast PWM, TOP=ICR1 */
     TCCR1B = _BV(WGM13) | _BV(WGM12)
