@@ -67,16 +67,16 @@ impl SerialManager {
         } else {
             println!(
                 "\x1b[38;2;{};{};{}m{}\x1b[0m",
-                color.r,
-                color.g,
-                color.b,
+                (color.r * f32::from(<u8>::max_value())) as u8,
+                (color.g * f32::from(<u8>::max_value())) as u8,
+                (color.b * f32::from(<u8>::max_value())) as u8,
                 "#".repeat(80),
             );
             println!(
                 "\x1b[38;2;{};{};{}m{}\x1b[0m\n",
-                color.w,
-                color.w,
-                color.w,
+                (color.w * f32::from(<u8>::max_value())) as u8,
+                (color.w * f32::from(<u8>::max_value())) as u8,
+                (color.w * f32::from(<u8>::max_value())) as u8,
                 "#".repeat(80),
             );
         }

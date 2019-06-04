@@ -28,6 +28,13 @@ pub struct LedSequenceInfo {
 }
 
 #[derive(Debug)]
+pub struct LedColorPoints {
+    pub color_points: Vec<Color>,
+    pub percent_points: Vec<f32>,
+    pub info: LedSequenceInfo,
+}
+
+#[derive(Debug)]
 pub struct LedSequence {
     pub colors: VecDeque<Color>,
     pub info: LedSequenceInfo,
@@ -46,17 +53,16 @@ impl LedSequence {
             colors.push_back(start_color.lerp(&end_color, percent));
         }
 
-        Self {
-            colors,
-            info: LedSequenceInfo {
-                sequence_type: LedSequenceType::Color,
-                name: "lerp".to_string(),
-                duration: FADE_DURATION,
-                repeat: false,
-            },
-            index: 0,
-            repeat_start: 0,
-        }
+        let mut sequence = Self::default();
+        sequence.colors = colors;
+        sequence.info = LedSequenceInfo {
+            sequence_type: LedSequenceType::Color,
+            name: "lerp".to_string(),
+            duration: FADE_DURATION,
+            repeat: false,
+        };
+
+        sequence
     }
 
     /// Load a gradient or single colour from a png file
@@ -164,6 +170,52 @@ impl LedSequence {
         }
     }
 
+    pub fn from_color_points(fade_from: &Color, points_path: &Path) -> Self {
+        let info = LedSequenceInfo {
+            sequence_type: LedSequenceType::Gradient,
+            name: "test".to_string(),
+            duration: 10.0,
+            repeat: false,
+        };
+
+        let points = LedColorPoints {
+            color_points: vec![
+                Color::new(1.0, 1.0, 1.0, 1.0),
+                Color::new(0.0, 0.0, 0.0, 0.0),
+                Color::new(1.0, 1.0, 1.0, 1.0),
+            ],
+            percent_points: vec![0.0, 0.5, 1.0],
+            info: info.clone(),
+        };
+
+        let mut sequence = Self::default();
+        sequence.info = info.clone();
+
+        let num_samples = (RESOLUTION * info.duration) as usize;
+
+        let mut colors = VecDeque::with_capacity(num_samples);
+        let mut color_index = 0;
+        for sample_index in 0..=num_samples {
+            let overall_percent = sample_index as f32 / num_samples as f32;
+            let lerp_percent = 1.0
+                - ((points.percent_points[color_index + 1] - overall_percent)
+                    / (points.percent_points[color_index + 1]
+                        - points.percent_points[color_index]));
+
+            colors.push_back(
+                points.color_points[color_index]
+                    .lerp(&points.color_points[color_index + 1], lerp_percent),
+            );
+
+            if overall_percent >= points.percent_points[color_index + 1] {
+                color_index += 1;
+            }
+        }
+
+        sequence.colors = colors;
+        sequence
+    }
+
     /// Sets the index that the iterator loops back to
     pub fn with_repeat_start(mut self, repeat_start: usize) -> Self {
         self.repeat_start = repeat_start;
@@ -241,6 +293,22 @@ impl LedSequence {
 
         self.colors = new_colors;
         self
+    }
+}
+
+impl Default for LedSequence {
+    fn default() -> Self {
+        Self {
+            colors: VecDeque::new(),
+            info: LedSequenceInfo {
+                sequence_type: LedSequenceType::Color,
+                name: "default".to_string(),
+                duration: 0.0,
+                repeat: false,
+            },
+            index: 0,
+            repeat_start: 0,
+        }
     }
 }
 

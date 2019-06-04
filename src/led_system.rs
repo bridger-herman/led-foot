@@ -20,7 +20,7 @@ impl LedSystem {
 
     /// Updates the current sequence directly
     pub fn update_sequence(&mut self, sequence_path: &str) {
-        self.current_sequence = Some(LedSequence::from_png(
+        self.current_sequence = Some(LedSequence::from_color_points(
             &self.current_color,
             Path::new(sequence_path),
         ));
