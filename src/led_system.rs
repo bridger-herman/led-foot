@@ -20,9 +20,13 @@ impl LedSystem {
 
     /// Updates the current sequence directly
     pub fn update_sequence(&mut self, sequence_path: &str) {
+        let seq = sequence_path.replace("png", "json");
+        debug!("Sequence path: {:?}", seq);
         self.current_sequence = Some(LedSequence::from_color_points(
             &self.current_color,
-            Path::new(sequence_path),
+            // TODO: Fix this on the javascript side (generate the colors from the
+            // json)
+            Path::new(&seq),
         ));
     }
 

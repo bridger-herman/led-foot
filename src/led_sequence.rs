@@ -1,5 +1,6 @@
 use std::collections::VecDeque;
 use std::fs::File;
+use std::io::Read;
 use std::path::Path;
 
 use crate::color::Color;
@@ -13,13 +14,13 @@ const FADE_DURATION: f32 = 0.5;
 /// Median filter size for initial
 const MEDIAN_FILTER_SIZE: usize = 51;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Deserialize)]
 pub enum LedSequenceType {
     Color,
     Gradient,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Deserialize)]
 pub struct LedSequenceInfo {
     pub sequence_type: LedSequenceType,
     pub name: String,
@@ -27,7 +28,7 @@ pub struct LedSequenceInfo {
     pub repeat: bool,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Deserialize)]
 pub struct LedColorPoints {
     pub color_points: Vec<Color>,
     pub percent_points: Vec<f32>,
@@ -171,49 +172,54 @@ impl LedSequence {
     }
 
     pub fn from_color_points(fade_from: &Color, points_path: &Path) -> Self {
-        let info = LedSequenceInfo {
-            sequence_type: LedSequenceType::Gradient,
-            name: "test".to_string(),
-            duration: 10.0,
-            repeat: false,
-        };
+        let mut file =
+            File::open(points_path).expect("Unable to open sequence file");
+        let mut contents = String::new();
+        file.read_to_string(&mut contents)
+            .expect("Unable to read sequence file");
+        let points: LedColorPoints = serde_json::from_str(&contents)
+            .expect("Unable to parse sequence file");
 
-        let points = LedColorPoints {
-            color_points: vec![
-                Color::new(1.0, 1.0, 1.0, 1.0),
-                Color::new(0.0, 0.0, 0.0, 0.0),
-                Color::new(1.0, 1.0, 1.0, 1.0),
-            ],
-            percent_points: vec![0.0, 0.5, 1.0],
-            info: info.clone(),
-        };
+        match points.info.sequence_type {
+            LedSequenceType::Color => {
+                Self::from_color_lerp(fade_from, &points.color_points[0])
+            }
+            LedSequenceType::Gradient => {
+                let num_samples = (RESOLUTION * points.info.duration) as usize;
 
-        let mut sequence = Self::default();
-        sequence.info = info.clone();
+                let mut colors = VecDeque::with_capacity(num_samples);
+                let mut color_index = 0;
+                for sample_index in 0..=num_samples {
+                    let overall_percent =
+                        sample_index as f32 / num_samples as f32;
+                    let lerp_percent = 1.0
+                        - ((points.percent_points[color_index + 1]
+                            - overall_percent)
+                            / (points.percent_points[color_index + 1]
+                                - points.percent_points[color_index]));
 
-        let num_samples = (RESOLUTION * info.duration) as usize;
+                    colors.push_back(points.color_points[color_index].lerp(
+                        &points.color_points[color_index + 1],
+                        lerp_percent,
+                    ));
 
-        let mut colors = VecDeque::with_capacity(num_samples);
-        let mut color_index = 0;
-        for sample_index in 0..=num_samples {
-            let overall_percent = sample_index as f32 / num_samples as f32;
-            let lerp_percent = 1.0
-                - ((points.percent_points[color_index + 1] - overall_percent)
-                    / (points.percent_points[color_index + 1]
-                        - points.percent_points[color_index]));
+                    if overall_percent >= points.percent_points[color_index + 1]
+                    {
+                        color_index += 1;
+                    }
+                }
 
-            colors.push_back(
-                points.color_points[color_index]
-                    .lerp(&points.color_points[color_index + 1], lerp_percent),
-            );
+                let mut sequence = Self::default();
+                sequence.info = points.info;
+                sequence.colors = colors;
 
-            if overall_percent >= points.percent_points[color_index + 1] {
-                color_index += 1;
+                let initial_fade =
+                    Self::from_color_lerp(fade_from, &sequence.colors[0]);
+                let fade_len = initial_fade.colors.len();
+
+                initial_fade.chain(sequence).with_repeat_start(fade_len)
             }
         }
-
-        sequence.colors = colors;
-        sequence
     }
 
     /// Sets the index that the iterator loops back to
