@@ -1,7 +1,14 @@
-use serde_derive::{Deserialize, Serialize};
 use std::ops::{Add, Div, Mul, Sub};
 
-fn lerp_component(low: f32, high: f32, percent: f32) -> f32 {
+use scarlet::color::{Color as ScarletColor, RGBColor as ScarletRGBColor};
+use scarlet::colors::cielabcolor::CIELABColor as ScarletCIELABColor;
+use serde_derive::{Deserialize, Serialize};
+
+fn lerp_component_f32(low: f32, high: f32, percent: f32) -> f32 {
+    (high - low) * percent + low
+}
+
+fn lerp_component_f64(low: f64, high: f64, percent: f64) -> f64 {
     (high - low) * percent + low
 }
 
@@ -39,12 +46,27 @@ impl Color {
     }
 
     pub fn lerp(&self, other: &Self, percent: f32) -> Self {
-        Self {
-            r: lerp_component(self.r, other.r, percent),
-            g: lerp_component(self.g, other.g, percent),
-            b: lerp_component(self.b, other.b, percent),
-            w: lerp_component(self.w, other.w, percent),
-        }
+        // Convert to CIE Lab space to interpolate in a perceptually uniform
+        // way
+        let other_lab: ScarletCIELABColor =
+            ScarletRGBColor::from(other).convert();
+        let mut result_lab: ScarletCIELABColor =
+            ScarletRGBColor::from(self).convert();
+
+        result_lab.l =
+            lerp_component_f64(result_lab.l, other_lab.l, percent.into());
+        result_lab.a =
+            lerp_component_f64(result_lab.a, other_lab.a, percent.into());
+        result_lab.b =
+            lerp_component_f64(result_lab.b, other_lab.b, percent.into());
+
+        let result_rgb: ScarletRGBColor =
+            result_lab.convert::<ScarletRGBColor>();
+
+        let mut out_color = Color::from(&result_rgb);
+        out_color.w = lerp_component_f32(self.w, other.w, percent);
+
+        out_color.clamped()
     }
 
     pub fn update_clone(&mut self, reference: &Self) {
@@ -82,6 +104,28 @@ impl From<&[u8; 4]> for Color {
             g: f32::from(bytes[1]) / f32::from(<u8>::max_value()),
             b: f32::from(bytes[2]) / f32::from(<u8>::max_value()),
             w: f32::from(bytes[3]) / f32::from(<u8>::max_value()),
+        }
+    }
+}
+
+impl From<&Color> for ScarletRGBColor {
+    fn from(color: &Color) -> Self {
+        let color = color.clone().clamped();
+        Self {
+            r: f64::from(color.r),
+            g: f64::from(color.g),
+            b: f64::from(color.b),
+        }
+    }
+}
+
+impl From<&ScarletRGBColor> for Color {
+    fn from(color: &ScarletRGBColor) -> Self {
+        Self {
+            r: color.r as f32,
+            g: color.g as f32,
+            b: color.b as f32,
+            w: f32::default(),
         }
     }
 }
