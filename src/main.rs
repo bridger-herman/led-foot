@@ -10,7 +10,6 @@ extern crate serial;
 #[macro_use]
 extern crate serde_derive;
 extern crate actix_web;
-extern crate scarlet;
 extern crate serde;
 extern crate serde_json;
 
