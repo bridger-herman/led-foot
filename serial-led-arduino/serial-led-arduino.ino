@@ -1,5 +1,8 @@
-#define RED 10
-#define GREEN 9
+// NOTE: probably only works on Arduino Mega 2560.
+
+// Define pins that colors are plugged into
+#define RED 12
+#define GREEN 11
 #define BLUE 6
 #define WHITE 5
 #define MAX_VALUE 255
@@ -12,31 +15,78 @@ unsigned char buf[BUFSIZE];
 int bytesRead = 0;
 
 // 16 bit PWM: https://arduino.stackexchange.com/a/12719
-// Red and Green are chosen to be the 16 bit outputs because of luminance:
-// L = 0.21*R + 0.72*G + 0.072*B
-/* Configure digital pins 9 and 10 as 16-bit PWM outputs. */
-void setupPWM16() {
-    DDRB |= _BV(PB1) | _BV(PB2);        /* set pins as outputs */
+// With help from https://arduino.stackexchange.com/questions/4877/16-bit-pwm-on-a-mega
+// Using reference diagram https://www.arduino.cc/en/uploads/Hacking/PinMap2560big.png
+// I could only get these to work: PE3, PH3, PB5, PB6
+// I think it has something to do with me not setting the timers up properly.
+void setupPWM16() {  
+    // Setup outputs (digital pins 5, 6, 11, and 12 on Mega 2560, for W, B, G, and R)
+    DDRB |= _BV(PE3) | _BV(PH3) | _BV(PB5) | _BV(PB6);
+
+    // Set up timer 1 for 16 bit PWM (for PB5 and PB6)
     TCCR1A = _BV(COM1A1) | _BV(COM1B1)  /* non-inverting PWM */
         | _BV(WGM11);                   /* mode 14: fast PWM, TOP=ICR1 */
     TCCR1B = _BV(WGM13) | _BV(WGM12)
         | _BV(CS10);                    /* no prescaling */
     ICR1 = 0xffff;                      /* TOP counter value */
+
+    // Set up timer 3 for 16 bit PWM (for PE3)
+    TCCR3A = _BV(COM1A1) | _BV(COM1B1)  /* non-inverting PWM */
+        | _BV(WGM11);                   /* mode 14: fast PWM, TOP=ICR3 */
+    TCCR3B = _BV(WGM13) | _BV(WGM12)
+        | _BV(CS10);                    /* no prescaling */
+    ICR3 = 0xffff;                      /* TOP counter value */
+
+    // Set up timer 4 for 16 bit PWM (for PH3)
+    TCCR4A = _BV(COM1A1) | _BV(COM1B1)  /* non-inverting PWM */
+        | _BV(WGM11);                   /* mode 14: fast PWM, TOP=ICR4 */
+    TCCR4B = _BV(WGM13) | _BV(WGM12)
+        | _BV(CS10);                    /* no prescaling */
+    ICR4 = 0xffff;                      /* TOP counter value */
+
+    pinMode(LED_BUILTIN, OUTPUT);
 }
 
-/* 16-bit version of analogWrite(). Works only on pins 9 and 10. */
+void blinkAlert(int howMany) {
+  for (int i = 0; i < howMany; i++) {
+    digitalWrite(LED_BUILTIN, HIGH);
+    delay(50);
+    digitalWrite(LED_BUILTIN, LOW);
+    delay(50);
+  }
+  delay(200);
+}
+
+// 16-bit version of analogWrite()
+// Specific mappings based on Mega 2560 data sheet
 void analogWrite16(uint8_t pin, uint16_t val)
 {
     switch (pin) {
-        case  9: OCR1A = val; break;
-        case 10: OCR1B = val; break;
+        case 5: OCR3A = val; break;
+        case 6: OCR4A = val; break;
+        case 11: OCR1A = val; break;
+        case 12: OCR1B = val; break;
     }
 }
 
+void setRGBW(int value) {
+  analogWrite16(RED, value);
+  analogWrite16(GREEN, value);
+  analogWrite16(BLUE, value);
+  analogWrite16(WHITE, value);
+}
+
+void setRGBW(int r, int g, int b, int w) {
+  analogWrite16(RED, r);
+  analogWrite16(GREEN, g);
+  analogWrite16(BLUE, b);
+  analogWrite16(WHITE, w);
+}
 
 void setup() {
   Serial.begin(9600);
 
+  // Set the LEDs to be output pins
   for (int i = 0; i < NUMPINS; i++) {
     pinMode(PINS[i], OUTPUT);
   }
@@ -47,51 +97,23 @@ void setup() {
   Serial.println("I"); // Successfully initialized
 }
 
-void setRGBW(int value) {
-  analogWrite16(RED, value);
-  analogWrite16(GREEN, value);
-  analogWrite(BLUE, value);
-  analogWrite(WHITE, value);
-}
-
-void setRGBW(int r, int g, int b, int w) {
-  analogWrite16(RED, r);
-  analogWrite16(GREEN, g);
-  analogWrite(BLUE, b);
-  analogWrite(WHITE, w);
-}
-
-void panic() {
-  for (int i = 0; i < 1000; i += 100) {
-    setRGBW(i%MAX_VALUE, 0, 0, 0);
-    delay(10);
-  }
-}
-
-void printBuffer(unsigned char* buf) {
-  String cur;
-  cur.concat(buf[1]);
-  cur.concat(' ');
-  cur.concat(buf[2]);
-  cur.concat(' ');
-  cur.concat(buf[3]);
-  cur.concat(' ');
-  cur.concat(buf[4]);
-  Serial.println(cur);
-}
-
 void loop() {
-  if (Serial.available() >= BUFSIZE*sizeof(unsigned char)) {
-    bytesRead = Serial.readBytes(buf, BUFSIZE);
-    if (bytesRead == BUFSIZE) {
-      // Convert from bytes to shorts
-      int redValue = ((int) buf[0] << 8) | (int) buf[1];
-      int greenValue = ((int) buf[2] << 8) | (int) buf[3];
-      
-      setRGBW(redValue, greenValue, buf[4], buf[5]);
-      bytesRead = 0;      
-      Serial.println("C"); // Successfully changed
-      memset(buf, BUFSIZE*sizeof(unsigned char), 0);
-    }
+  for (int i = 0; i < 0xffff; i++) {
+    setRGBW(0);
+    delay(1.0);
   }
+
+//  if (Serial.available() >= BUFSIZE*sizeof(unsigned char)) {
+//    bytesRead = Serial.readBytes(buf, BUFSIZE);
+//    if (bytesRead == BUFSIZE) {
+//      // Convert from bytes to shorts
+//      int redValue = ((int) buf[0] << 8) | (int) buf[1];
+//      int greenValue = ((int) buf[2] << 8) | (int) buf[3];
+//      
+//      setRGBW(redValue, greenValue, buf[4], buf[5]);
+//      bytesRead = 0;      
+//      Serial.println("C"); // Successfully changed
+//      memset(buf, BUFSIZE*sizeof(unsigned char), 0);
+//    }
+//  }
 }
