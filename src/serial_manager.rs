@@ -39,8 +39,8 @@ impl SerialManager {
                 .expect("Couldn't read initializer bytes");
 
             // Send the default color
-            let write_bytes: [u8; 6] =
-                <[u8; 6]>::from(&led_system!().current_color);
+            let write_bytes: [u8; 8] =
+                <[u8; 8]>::from(&led_system!().current_color);
             ser.write_all(&write_bytes).expect("Couldn't write default");
 
             // Receive confirmation bytes "C\r\n"
@@ -55,7 +55,7 @@ impl SerialManager {
     pub fn send_color(&mut self, color: &Color) {
         if let Some(ref mut ser) = self.serial {
             // Send the color
-            let write_bytes: [u8; 6] = <[u8; 6]>::from(color);
+            let write_bytes: [u8; 8] = <[u8; 8]>::from(color);
             debug!("sending bytes: {:?}", write_bytes);
             ser.write_all(&write_bytes)
                 .expect("Couldn't write color bytes");
@@ -100,12 +100,10 @@ impl Default for SerialManager {
 }
 
 /// Convert to the format that the Arduino is expecting
-impl From<&Color> for [u8; 6] {
-    fn from(color: &Color) -> [u8; 6] {
-        let color = color.clone().clamped();
+impl From<&Color> for [u8; 8] {
+    fn from(color: &Color) -> [u8; 8] {
+        let color = color.clamped();
 
-        // Convert red and green to 16 bit integers (because they have the most
-        // effect on luminance)
         let red_int = (color.r * f32::from(<u16>::max_value())).round() as u16;
         let red_byte1 = ((red_int & 0xff00) >> 8) as u8;
         let red_byte2 = (red_int & 0x00ff) as u8;
@@ -115,16 +113,24 @@ impl From<&Color> for [u8; 6] {
         let green_byte1 = ((green_int & 0xff00) >> 8) as u8;
         let green_byte2 = (green_int & 0x00ff) as u8;
 
-        let blue_byte = (color.b * f32::from(<u8>::max_value())).round() as u8;
-        let white_byte = (color.w * f32::from(<u8>::max_value())).round() as u8;
+        let blue_int = (color.b * f32::from(<u16>::max_value())).round() as u16;
+        let blue_byte1 = ((blue_int & 0xff00) >> 8) as u8;
+        let blue_byte2 = (blue_int & 0x00ff) as u8;
+
+        let white_int =
+            (color.w * f32::from(<u16>::max_value())).round() as u16;
+        let white_byte1 = ((white_int & 0xff00) >> 8) as u8;
+        let white_byte2 = (white_int & 0x00ff) as u8;
 
         [
             red_byte1,
             red_byte2,
             green_byte1,
             green_byte2,
-            blue_byte,
-            white_byte,
+            blue_byte1,
+            blue_byte2,
+            white_byte1,
+            white_byte2,
         ]
     }
 }

@@ -15,7 +15,7 @@ fn clamp_component(component: f32) -> f32 {
     }
 }
 
-/// RGBW color (float representation, 0 to 1)
+/// RGBW color (float representation, 0.0 to 1.0)
 #[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
 pub struct Color {
     pub r: f32,
@@ -29,7 +29,7 @@ impl Color {
         Self { r, g, b, w }
     }
 
-    pub fn clamped(self) -> Self {
+    pub fn clamped(&self) -> Self {
         Self {
             r: clamp_component(self.r),
             g: clamp_component(self.g),

@@ -8,7 +8,7 @@
 #define MAX_VALUE 255
 
 #define NUMPINS 4
-#define BUFSIZE 6 // 2 bytes for RED and GREEN each, one byte for BLUE and WHITE
+#define BUFSIZE 8 // 2 bytes for each channel (they're shorts, represented in Little-Endian format)
 
 const int PINS[] = {RED, GREEN, BLUE, WHITE};
 unsigned char buf[BUFSIZE];
@@ -98,22 +98,19 @@ void setup() {
 }
 
 void loop() {
-  for (int i = 0; i < 0xffff; i++) {
-    setRGBW(0);
-    delay(1.0);
+  if (Serial.available() >= BUFSIZE*sizeof(unsigned char)) {
+    bytesRead = Serial.readBytes(buf, BUFSIZE);
+    if (bytesRead == BUFSIZE) {
+      // Convert from bytes to shorts
+      int redValue = ((int) buf[0] << 8) | (int) buf[1];
+      int greenValue = ((int) buf[2] << 8) | (int) buf[3];
+      int blueValue = ((int) buf[4] << 8) | (int) buf[5];
+      int whiteValue = ((int) buf[6] << 8) | (int) buf[7];
+      
+      setRGBW(redValue, greenValue, blueValue, whiteValue);
+      bytesRead = 0;
+      Serial.println("C"); // Successfully changed
+      memset(buf, BUFSIZE*sizeof(unsigned char), 0);
+    }
   }
-
-//  if (Serial.available() >= BUFSIZE*sizeof(unsigned char)) {
-//    bytesRead = Serial.readBytes(buf, BUFSIZE);
-//    if (bytesRead == BUFSIZE) {
-//      // Convert from bytes to shorts
-//      int redValue = ((int) buf[0] << 8) | (int) buf[1];
-//      int greenValue = ((int) buf[2] << 8) | (int) buf[3];
-//      
-//      setRGBW(redValue, greenValue, buf[4], buf[5]);
-//      bytesRead = 0;      
-//      Serial.println("C"); // Successfully changed
-//      memset(buf, BUFSIZE*sizeof(unsigned char), 0);
-//    }
-//  }
 }
