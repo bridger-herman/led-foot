@@ -32,7 +32,7 @@ impl LedSystem {
 
     /// Runs through the current LED sequence
     pub fn run_sequence(&mut self) {
-        led_state!().active = true;
+        led_state!().set_active(true);
         if let Some(ref mut seq) = self.current_sequence {
             let start = Instant::now();
             let mut previous_time = Instant::now();
@@ -43,7 +43,7 @@ impl LedSystem {
                 let delay = Duration::from_millis((1000.0 / RESOLUTION) as u64);
                 let error = diff.checked_sub(delay).unwrap_or_default();
                 total_error += error;
-                if led_state!().changed_from_ui {
+                if led_state!().changed_from_ui() {
                     info!("interrupting");
                     break;
                 }
@@ -73,7 +73,7 @@ impl LedSystem {
             }
             debug!("Time: {:?}", start.elapsed());
         }
-        led_state!().active = false;
+        led_state!().set_active(false);
     }
 }
 

@@ -48,6 +48,21 @@ macro_rules! led_schedule {
 
 #[derive(Default)]
 pub struct LedState {
-    pub changed_from_ui: bool,
-    pub active: bool,
+    changed_from_ui: bool,
+    active: bool,
+}
+
+impl LedState {
+    pub fn set_changed_from_ui(&mut self, value: bool) {
+        self.changed_from_ui = value;
+    }
+    pub fn set_active(&mut self, value: bool) {
+        self.active = value;
+    }
+    pub fn changed_from_ui(&self) -> bool {
+        self.changed_from_ui
+    }
+    pub fn active(&self) -> bool {
+        self.active
+    }
 }

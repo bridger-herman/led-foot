@@ -47,11 +47,12 @@ fn set_rgbw(
         info!("Setting color {:?}", color);
         {
             let mut state = led_state!();
-            state.changed_from_ui = state.active;
+            let active = state.active();
+            state.set_changed_from_ui(active);
         }
         led_system!().update_color(&color);
         led_system!().run_sequence();
-        led_state!().changed_from_ui = false;
+        led_state!().set_changed_from_ui(false);
 
         Ok(HttpResponse::Ok().json(color))
     })
@@ -69,13 +70,14 @@ fn set_sequence(
 
         {
             let mut state = led_state!();
-            state.changed_from_ui = state.active;
+            let active = state.active();
+            state.set_changed_from_ui(active);
         }
         led_system!().update_sequence(&data["name"]);
         thread::spawn(move || {
             led_system!().run_sequence();
         });
-        led_state!().changed_from_ui = false;
+        led_state!().set_changed_from_ui(false);
 
         Ok(HttpResponse::Ok().json(data))
     })
