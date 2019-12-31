@@ -129,6 +129,12 @@ fn main() -> io::Result<()> {
                 )
                 .show_files_listing(),
             )
+            .service(
+                actix_files::Files::new(
+                    "/static",
+                    "static",
+                )
+            )
             // api calls
             .service(web::resource("/api/get-schedule").to(
                 |_: HttpRequest| -> Result<HttpResponse> {
