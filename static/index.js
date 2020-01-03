@@ -95,7 +95,24 @@ function makeScheduleElement(data) {
   );
 }
 
+function updateSlidersFromJson(data) {
+  $('#input-range-red').val(data.r);
+  $('#input-range-green').val(data.g);
+  $('#input-range-blue').val(data.b);
+  $('#input-range-white').val(data.w);
+}
+
 function setup() {
+  // Start a WebSocket for updating the sliders in realtime
+  let fullHref = window.location.href;
+  let serverNameRegex = new RegExp('http://(.+):.+');
+  let serverName = serverNameRegex.exec(fullHref)[1];
+
+  let ws = new WebSocket(`ws://${serverName}:9001`);
+  ws.onmessage = (evt) => {
+    updateSlidersFromJson(JSON.parse(evt.data));
+  };
+
   // Setup ajax POST requests to update RGBW leds
   $('.input-range-container input').on('change', function() {
     let data = {
@@ -115,12 +132,7 @@ function setup() {
   $.ajax({
     type: 'GET',
     url: '/api/get-rgbw',
-    success: (response) => {
-      $('#input-range-red').val(response.r);
-      $('#input-range-green').val(response.g);
-      $('#input-range-blue').val(response.b);
-      $('#input-range-white').val(response.w);
-    }
+    success: updateSlidersFromJson,
   });
 
   $.ajax({
@@ -132,25 +144,25 @@ function setup() {
         $('#favorite-list')
           .append(
             $('<li/>')
-              .append(
-                $('<div/>', {
-                  class: 'favorite-thumb',
-                  attr: {
-                    sequencePath: s,
-                  },
-                  on: {
-                    click: function(event) {
-                      let text =
-                        $(event.target)
-                          .parent('.favorite-thumb')
-                          .attr('sequencePath');
-                      loadSequence(text);
-                    }
+            .append(
+              $('<div/>', {
+                class: 'favorite-thumb',
+                attr: {
+                  sequencePath: s,
+                },
+                on: {
+                  click: function(event) {
+                    let text =
+                      $(event.target)
+                      .parent('.favorite-thumb')
+                      .attr('sequencePath');
+                    loadSequence(text);
                   }
-                })
-                .append($('<img/>', {attr: {src: s}}))
-                .append($('<p/>', {text: stripName(s)}))
-              )
+                }
+              })
+              .append($('<img/>', {attr: {src: s}}))
+              .append($('<p/>', {text: stripName(s)}))
+            )
           );
       }
     }

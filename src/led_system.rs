@@ -67,6 +67,7 @@ impl LedSystem {
                 );
 
                 serial_manager!().send_color(&self.current_color);
+                subscribers!().send_color_update(&self.current_color);
 
                 previous_time = current_time;
                 current_time = Instant::now();

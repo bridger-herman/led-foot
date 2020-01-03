@@ -21,10 +21,13 @@ pub mod led_scheduler;
 pub mod led_sequence;
 pub mod led_system;
 pub mod serial_manager;
+pub mod subscribers;
 
 use std::collections::HashMap;
 use std::io;
+use std::net::TcpListener;
 use std::thread;
+use std::time::Duration;
 
 use actix_session::CookieSession;
 use actix_web::http::StatusCode;
@@ -32,6 +35,7 @@ use actix_web::{
     middleware, web, App, Error, HttpRequest, HttpResponse, HttpServer, Result,
 };
 use futures::{Future, Stream};
+use tungstenite::server::accept;
 
 use crate::color::Color;
 use crate::led_scheduler::LedAlarm;
@@ -129,12 +133,7 @@ fn main() -> io::Result<()> {
                 )
                 .show_files_listing(),
             )
-            .service(
-                actix_files::Files::new(
-                    "/static",
-                    "static",
-                )
-            )
+            .service(actix_files::Files::new("/static", "static"))
             // api calls
             .service(web::resource("/api/get-schedule").to(
                 |_: HttpRequest| -> Result<HttpResponse> {
@@ -199,10 +198,20 @@ fn main() -> io::Result<()> {
     .bind("0.0.0.0:5000")?
     .start();
 
+    // Start the websocket server
+    let ws_server =
+        TcpListener::bind("0.0.0.0:9001").expect("Unable to bind WS address");
+    thread::spawn(move || {
+        for stream in ws_server.incoming() {
+            // Move the websocket to the subscriber list
+            let ws = accept(stream.unwrap()).unwrap();
+            subscribers!().add(ws);
+        }
+    });
+
     thread::spawn(move || loop {
         led_schedule!().one_frame();
-
-        thread::sleep(std::time::Duration::from_secs(1));
+        thread::sleep(Duration::from_secs(1));
     });
 
     println!("Starting http server: 0.0.0.0:5000");
