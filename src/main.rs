@@ -29,7 +29,6 @@ use std::net::TcpListener;
 use std::thread;
 use std::time::Duration;
 
-use actix_session::CookieSession;
 use actix_web::http::StatusCode;
 use actix_web::{
     middleware, web, App, Error, HttpRequest, HttpResponse, HttpServer, Result,
@@ -123,8 +122,6 @@ fn main() -> io::Result<()> {
         App::new()
             // enable logger
             .wrap(middleware::Logger::default())
-            // cookie session middleware
-            .wrap(CookieSession::signed(&[0; 32]).secure(false))
             // static files
             .service(
                 actix_files::Files::new(
