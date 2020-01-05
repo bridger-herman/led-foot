@@ -7,6 +7,10 @@ use serial::{SerialPort, SystemPort};
 
 use crate::color::Color;
 
+// Magic numbers for color or room relay commands
+const COLOR_CMD: u8 = 0xC0;
+const ROOM_CMD: u8 = 0xF0;
+
 pub struct SerialManager {
     pub serial: Option<SystemPort>,
 }
@@ -18,7 +22,7 @@ impl SerialManager {
             ser.set_timeout(Duration::from_secs(2)).unwrap();
             Some(ser)
         } else {
-            error!(
+            warn!(
                 "Unable to initialize serial at {}. Using serial mockup",
                 tty_name
             );
@@ -38,16 +42,26 @@ impl SerialManager {
             ser.read_exact(&mut read_buf)
                 .expect("Couldn't read initializer bytes");
 
+            if read_buf != "I\r\n".as_bytes() {
+                error!("Serial initialization reply didn't match `I` (received `{:?}` instead)", read_buf);
+            }
+
             // Send the default color
-            let write_bytes: [u8; 8] =
-                <[u8; 8]>::from(&led_system!().current_color);
-            ser.write_all(&write_bytes).expect("Couldn't write default");
+            let write_bytes: [u8; 9] =
+                <[u8; 9]>::from(&led_system!().current_color);
+            ser.write_all(&write_bytes)
+                .expect("Couldn't write default color");
 
             // Receive confirmation bytes "C\r\n"
             let mut read_buf: [u8; 3] = [0; 3];
             ser.read_exact(&mut read_buf)
                 .expect("Couldn't read initial confirmation");
-            debug!("Received setup confirmation");
+
+            if read_buf != "C\r\n".as_bytes() {
+                error!("Serial color setup reply didn't match `C` (received `{:?}` instead)", read_buf);
+            } else {
+                debug!("Finished serial setup");
+            }
         }
     }
 
@@ -55,7 +69,7 @@ impl SerialManager {
     pub fn send_color(&mut self, color: &Color) {
         if let Some(ref mut ser) = self.serial {
             // Send the color
-            let write_bytes: [u8; 8] = <[u8; 8]>::from(color);
+            let write_bytes: [u8; 9] = <[u8; 9]>::from(color);
             debug!("sending bytes: {:?}", write_bytes);
             ser.write_all(&write_bytes)
                 .expect("Couldn't write color bytes");
@@ -99,9 +113,10 @@ impl Default for SerialManager {
     }
 }
 
-/// Convert to the format that the Arduino is expecting
-impl From<&Color> for [u8; 8] {
-    fn from(color: &Color) -> [u8; 8] {
+/// Convert to the format that the Arduino is expecting, including the prefix
+/// magic number COLOR_CMD
+impl From<&Color> for [u8; 9] {
+    fn from(color: &Color) -> [u8; 9] {
         let color = color.clamped();
 
         let red_int = (color.r * f32::from(<u16>::max_value())).round() as u16;
@@ -123,6 +138,7 @@ impl From<&Color> for [u8; 8] {
         let white_byte2 = (white_int & 0x00ff) as u8;
 
         [
+            COLOR_CMD,
             red_byte1,
             red_byte2,
             green_byte1,
