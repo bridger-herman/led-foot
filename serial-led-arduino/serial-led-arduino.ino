@@ -8,11 +8,12 @@
 #define MAX_VALUE 255
 
 // Define pins that relays are plugged into
-#define LIVING_ROOM 28
-#define OFFICE 26
+#define LIVING_ROOM 26
+#define OFFICE 28
 #define BEDROOM 24
 
-#define NUMPINS 4
+#define NUM_COLORS 4
+#define NUM_ROOMS 3
 
 // 1 magic byte for determining whether a color command is being sent, or a room relay command
 // Then, either:
@@ -28,8 +29,12 @@
 #define ROOM_CMD 0xF0
 
 const int PINS[] = {RED, GREEN, BLUE, WHITE};
+const int ROOMS[] = {LIVING_ROOM, OFFICE, BEDROOM};
+
 unsigned char buf[BUFSIZE];
 int bytesRead = 0;
+int roomState[] = {LOW, LOW, LOW};
+bool allOff = true;
 
 // 16 bit PWM: https://arduino.stackexchange.com/a/12719
 // With help from https://arduino.stackexchange.com/questions/4877/16-bit-pwm-on-a-mega
@@ -107,11 +112,66 @@ void allRooms(int state) {
 
 }
 
+// Restore the room relay state from roomState
+void restoreRelayState() {
+  for (int i = 0; i < NUM_ROOMS; i++) {
+    digitalWrite(ROOMS[i], roomState[i]);
+  }
+}
+
+void colorCmd(unsigned char buf[BUFSIZE]) {
+  // Convert from bytes to shorts
+  int redValue = ((int) buf[1] << 8) | (int) buf[2];
+  int greenValue = ((int) buf[3] << 8) | (int) buf[4];
+  int blueValue = ((int) buf[5] << 8) | (int) buf[6];
+  int whiteValue = ((int) buf[7] << 8) | (int) buf[8];
+  
+  // If it's completely black, turn off the relays, independently of what their
+  // state is from the room commands
+  if (redValue == 0 && greenValue == 0 && blueValue == 0 && whiteValue == 0) {
+    allRooms(LOW);
+    allOff = true;
+  } else {
+    restoreRelayState();
+    allOff = false;
+  }
+  
+  setRGBW(redValue, greenValue, blueValue, whiteValue);
+}
+
+void roomCmd(unsigned char buf[BUFSIZE]) {
+  if (!allOff) {
+    // Clear the room state
+    for (int i = 0; i < NUM_ROOMS; i++) {
+      roomState[i] = LOW;
+    }
+
+    for (int i = 1; i < BUFSIZE; i++) {
+      switch (buf[i]) {
+        case LIVING_ROOM:
+          roomState[0] = HIGH;
+          break;
+        case OFFICE:
+          roomState[1] = HIGH;
+          break;
+        case BEDROOM:
+          roomState[2] = HIGH;
+          break;
+        default:
+          break;
+      }
+    }
+
+    // Send the commands to the relays
+    restoreRelayState();
+  }
+}
+
 void setup() {
   Serial.begin(9600);
 
   // Set the LEDs to be output pins
-  for (int i = 0; i < NUMPINS; i++) {
+  for (int i = 0; i < NUM_COLORS; i++) {
     pinMode(PINS[i], OUTPUT);
   }
   memset(buf, BUFSIZE*sizeof(unsigned char), 0);
@@ -128,29 +188,12 @@ void setup() {
   Serial.println("I"); // Successfully initialized
 }
 
-void colorCmd(unsigned char buf[BUFSIZE]) {
-  // Convert from bytes to shorts
-  int redValue = ((int) buf[1] << 8) | (int) buf[2];
-  int greenValue = ((int) buf[3] << 8) | (int) buf[4];
-  int blueValue = ((int) buf[5] << 8) | (int) buf[6];
-  int whiteValue = ((int) buf[7] << 8) | (int) buf[8];
-  
-  // If it's completely black, turn off the relays, independently of what their
-  // state is from the room commands
-  if (redValue == 0 && greenValue == 0 && blueValue == 0 && whiteValue == 0) {
-    allRooms(LOW);
-  } else {
-    allRooms(HIGH);
-  }
-  
-  setRGBW(redValue, greenValue, blueValue, whiteValue);
-}
-
 void loop() {
   if (Serial.available() >= BUFSIZE*sizeof(unsigned char)) {
     bytesRead = Serial.readBytes(buf, BUFSIZE);
     if (bytesRead == BUFSIZE) {
       if (buf[0] == ROOM_CMD) {
+        roomCmd(buf);
         Serial.println("R"); // Successfully changed room status
       } else if (buf[0] = COLOR_CMD) {
         colorCmd(buf);

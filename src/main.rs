@@ -20,6 +20,7 @@ pub mod color;
 pub mod led_scheduler;
 pub mod led_sequence;
 pub mod led_system;
+pub mod room_manager;
 pub mod serial_manager;
 pub mod subscribers;
 
@@ -38,6 +39,7 @@ use tungstenite::server::accept;
 
 use crate::color::Color;
 use crate::led_scheduler::LedAlarm;
+use crate::room_manager::Room;
 
 fn set_rgbw(
     payload: web::Payload,
@@ -100,6 +102,20 @@ fn set_schedule(
         led_schedule!().rewrite_schedule();
 
         Ok(HttpResponse::Ok().json(data))
+    })
+}
+
+fn set_rooms(
+    payload: web::Payload,
+) -> impl Future<Item = HttpResponse, Error = Error> {
+    // Load the body
+    payload.concat2().from_err().and_then(|body| {
+        let rooms: HashMap<Room, bool> =
+            serde_json::from_str(std::str::from_utf8(&body).unwrap()).unwrap();
+
+        rooms!().set_active_rooms(rooms.clone());
+
+        Ok(HttpResponse::Ok().json(rooms))
     })
 }
 
@@ -170,6 +186,16 @@ fn main() -> io::Result<()> {
                         ))
                 },
             ))
+            .service(web::resource("/api/get-rooms").to(
+                |_: HttpRequest| -> Result<HttpResponse> {
+                    Ok(HttpResponse::build(StatusCode::OK)
+                        .content_type("application/json; charset=utf-8")
+                        .body(
+                            serde_json::to_string(&rooms!().active_rooms())
+                                .expect("Failed to encode room list"),
+                        ))
+                },
+            ))
             .service(
                 web::resource("/api/set-rgbw")
                     .route(web::post().to_async(set_rgbw)),
@@ -181,6 +207,10 @@ fn main() -> io::Result<()> {
             .service(
                 web::resource("/api/set-schedule")
                     .route(web::post().to_async(set_schedule)),
+            )
+            .service(
+                web::resource("/api/set-rooms")
+                    .route(web::post().to_async(set_rooms)),
             )
             // simple index
             .service(web::resource("/").to(

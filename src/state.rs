@@ -4,6 +4,7 @@ use std::sync::Mutex;
 
 use crate::led_scheduler::LedScheduler;
 use crate::led_system::LedSystem;
+use crate::room_manager::RoomManager;
 use crate::serial_manager::SerialManager;
 use crate::subscribers::LedSubscribers;
 
@@ -17,6 +18,7 @@ lazy_static! {
     pub static ref STATE: Mutex<LedState> = Mutex::new(LedState::default());
     pub static ref SCHEDULE: Mutex<LedScheduler> =
         Mutex::new(LedScheduler::default());
+    pub static ref ROOMS: Mutex<RoomManager> = Mutex::new(RoomManager::default());
 
     pub static ref SUBSCRIBERS: Mutex<LedSubscribers> = Mutex::new(LedSubscribers::new());
 }
@@ -25,6 +27,13 @@ lazy_static! {
 macro_rules! led_system {
     () => {
         crate::state::LED_SYSTEM.lock().unwrap()
+    };
+}
+
+#[macro_export]
+macro_rules! rooms {
+    () => {
+        crate::state::ROOMS.lock().unwrap()
     };
 }
 

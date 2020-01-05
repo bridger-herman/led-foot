@@ -79,3 +79,19 @@ ul.no-indent {
 #schedule img {
   width: 100%;
 }
+
+#rooms {
+    display: flex;
+    justify-content: center;
+}
+#rooms span {
+    display: flex;
+    align-items: center;
+    padding: 0 10px;
+    font-size: 24px;
+    font-family: sans-serif;
+}
+#rooms input[type="checkbox"] {
+    height: 6vh;
+    width: 6vh;
+}

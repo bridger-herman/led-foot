@@ -1,15 +1,22 @@
 //! Manages the LED Arduino serial connection
 
+use std::collections::HashMap;
 use std::io::{Read, Write};
 use std::time::Duration;
 
 use serial::{SerialPort, SystemPort};
 
 use crate::color::Color;
+use crate::room_manager::Room;
 
 // Magic numbers for color or room relay commands
 const COLOR_CMD: u8 = 0xC0;
 const ROOM_CMD: u8 = 0xF0;
+
+// Magic numbers for each room
+const LIVING_ROOM: u8 = 0x1A;
+const OFFICE: u8 = 0x1C;
+const BEDROOM: u8 = 0x18;
 
 pub struct SerialManager {
     pub serial: Option<SystemPort>,
@@ -78,6 +85,13 @@ impl SerialManager {
             let mut read_buf: [u8; 3] = [0; 3];
             ser.read_exact(&mut read_buf)
                 .expect("Couldn't read confirmation");
+
+            if read_buf != "C\r\n".as_bytes() {
+                error!(
+                    "Serial reply didn't match `C` (received `{:?}` instead)",
+                    read_buf
+                );
+            }
         } else {
             println!(
                 "\x1b[38;2;{};{};{}m{}\x1b[0m",
@@ -93,6 +107,31 @@ impl SerialManager {
                 (color.w * f32::from(<u8>::max_value())) as u8,
                 "#".repeat(80),
             );
+        }
+    }
+
+    /// Send the current room state to the Arduino
+    pub fn send_rooms(&mut self, state: &HashMap<Room, bool>) {
+        if let Some(ref mut ser) = self.serial {
+            // Send the color
+            let write_bytes: [u8; 9] = rooms_to_bytes(state);
+            debug!("sending bytes: {:?}", write_bytes);
+            ser.write_all(&write_bytes)
+                .expect("Couldn't write color bytes");
+
+            // Receive confirmation bytes "R\r\n"
+            let mut read_buf: [u8; 3] = [0; 3];
+            ser.read_exact(&mut read_buf)
+                .expect("Couldn't read confirmation");
+
+            if read_buf != "R\r\n".as_bytes() {
+                error!(
+                    "Serial reply didn't match `R` (received `{:?}` instead)",
+                    read_buf
+                );
+            }
+        } else {
+            println!("Room state update: {:?}", state);
         }
     }
 }
@@ -149,4 +188,24 @@ impl From<&Color> for [u8; 9] {
             white_byte2,
         ]
     }
+}
+
+/// Convert to the format that the Arduino is expecting, including the prefix
+/// magic number ROOM_CMD
+fn rooms_to_bytes(rooms: &HashMap<Room, bool>) -> [u8; 9] {
+    [
+        ROOM_CMD,
+        if rooms[&Room::LivingRoom] {
+            LIVING_ROOM
+        } else {
+            0x00
+        },
+        if rooms[&Room::Office] { OFFICE } else { 0x00 },
+        if rooms[&Room::Bedroom] { BEDROOM } else { 0x00 },
+        0x00,
+        0x00,
+        0x00,
+        0x00,
+        0x00,
+    ]
 }
