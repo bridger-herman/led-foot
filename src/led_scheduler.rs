@@ -4,6 +4,8 @@ use std::io::prelude::*;
 use chrono::prelude::*;
 use serde_json;
 
+use crate::room_manager::Room;
+
 const SCHEDULE_FILE: &str = "schedules/schedule.json";
 
 #[derive(Debug, Serialize, Deserialize, Clone)]

@@ -139,13 +139,15 @@ void colorCmd(unsigned char buf[BUFSIZE]) {
   setRGBW(redValue, greenValue, blueValue, whiteValue);
 }
 
+void clearRoomState() {
+  for (int i = 0; i < NUM_ROOMS; i++) {
+    roomState[i] = LOW;
+  }
+}
+
 void roomCmd(unsigned char buf[BUFSIZE]) {
   if (!allOff) {
-    // Clear the room state
-    for (int i = 0; i < NUM_ROOMS; i++) {
-      roomState[i] = LOW;
-    }
-
+    clearRoomState();
     for (int i = 1; i < BUFSIZE; i++) {
       switch (buf[i]) {
         case LIVING_ROOM:
@@ -184,6 +186,8 @@ void setup() {
   pinMode(BEDROOM, OUTPUT);
 
   allRooms(LOW);
+  allOff = true;
+  clearRoomState();
 
   Serial.println("I"); // Successfully initialized
 }
@@ -195,7 +199,7 @@ void loop() {
       if (buf[0] == ROOM_CMD) {
         roomCmd(buf);
         Serial.println("R"); // Successfully changed room status
-      } else if (buf[0] = COLOR_CMD) {
+      } else if (buf[0] == COLOR_CMD) {
         colorCmd(buf);
         Serial.println("C"); // Successfully changed color
       } else {

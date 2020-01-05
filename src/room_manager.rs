@@ -17,6 +17,17 @@ pub struct RoomManager {
 }
 
 impl RoomManager {
+    /// Set only this room to be active
+    pub fn set_active_only(&mut self, room: Room) {
+        self.active_rooms.insert(Room::LivingRoom, false);
+        self.active_rooms.insert(Room::Bedroom, false);
+        self.active_rooms.insert(Room::Office, false);
+
+        self.active_rooms.insert(room, true);
+
+        serial_manager!().send_rooms(&self.active_rooms);
+    }
+
     pub fn set_active_rooms(&mut self, active_rooms: HashMap<Room, bool>) {
         self.active_rooms = active_rooms;
         serial_manager!().send_rooms(&self.active_rooms);

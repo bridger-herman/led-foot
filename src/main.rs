@@ -55,6 +55,7 @@ fn set_rgbw(
             let active = state.active();
             state.set_changed_from_ui(active);
         }
+
         led_system!().update_color(&color);
         led_system!().run_sequence();
         led_state!().set_changed_from_ui(false);
