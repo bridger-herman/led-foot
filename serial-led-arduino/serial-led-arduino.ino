@@ -7,6 +7,11 @@
 #define WHITE 5
 #define MAX_VALUE 255
 
+// Define pins that relays are plugged into
+#define LIVING_ROOM 28
+#define OFFICE 26
+#define BEDROOM 24
+
 #define NUMPINS 4
 #define BUFSIZE 8 // 2 bytes for each channel (they're shorts, represented in Little-Endian format)
 
@@ -83,6 +88,13 @@ void setRGBW(int r, int g, int b, int w) {
   analogWrite16(WHITE, w);
 }
 
+void allRooms(int state) {
+  digitalWrite(LIVING_ROOM, state);
+  digitalWrite(OFFICE, state);
+  digitalWrite(BEDROOM, state);
+
+}
+
 void setup() {
   Serial.begin(9600);
 
@@ -93,6 +105,13 @@ void setup() {
   memset(buf, BUFSIZE*sizeof(unsigned char), 0);
 
   setupPWM16();
+
+  // Set output pins for relays
+  pinMode(LIVING_ROOM, OUTPUT);
+  pinMode(OFFICE, OUTPUT);
+  pinMode(BEDROOM, OUTPUT);
+
+  allRooms(LOW);
 
   Serial.println("I"); // Successfully initialized
 }
@@ -106,6 +125,13 @@ void loop() {
       int greenValue = ((int) buf[2] << 8) | (int) buf[3];
       int blueValue = ((int) buf[4] << 8) | (int) buf[5];
       int whiteValue = ((int) buf[6] << 8) | (int) buf[7];
+
+      // If it's completely black, turn off the relays
+      if (redValue == 0 && greenValue == 0 && blueValue == 0 && whiteValue == 0) {
+        allRooms(LOW);
+      } else {
+        allRooms(HIGH);
+      }
       
       setRGBW(redValue, greenValue, blueValue, whiteValue);
       bytesRead = 0;
