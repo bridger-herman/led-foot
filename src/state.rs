@@ -47,7 +47,7 @@ macro_rules! serial_manager {
 #[macro_export]
 macro_rules! led_state {
     () => {
-        crate::state::STATE.try_lock().unwrap()
+        crate::state::STATE.lock().unwrap()
     };
 }
 
