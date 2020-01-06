@@ -20,14 +20,6 @@ body {
   flex-direction: column;
 }
 
-input[type="range"] {
-  border-width: 5px;
-  background: #111;
-  width: calc(100% - 15px);
-  margin: 10px;
-  height: 7vh;
-}
-
 .preview {
   border: 2px solid white;
   height: 10vh;
@@ -68,6 +60,44 @@ input[type="range"] {
 
 ul.no-indent {
   padding-left: 0;
+}
+
+/* Specific color slider thumb backgrounds */
+#input-range-red::-webkit-slider-thumb { */
+    background: #F99;
+}
+#input-range-red::-moz-range-thumb {
+    background: #F99;
+}
+#input-range-red::-ms-thumb {
+    background: #F99;
+}
+#input-range-green::-webkit-slider-thumb { */
+    background: #9F9;
+}
+#input-range-green::-moz-range-thumb {
+    background: #9F9;
+}
+#input-range-green::-ms-thumb {
+    background: #9F9;
+}
+#input-range-blue::-webkit-slider-thumb { */
+    background: #99F;
+}
+#input-range-blue::-moz-range-thumb {
+    background: #99F;
+}
+#input-range-blue::-ms-thumb {
+    background: #99F;
+}
+#input-range-white::-webkit-slider-thumb { */
+    background: #FFF;
+}
+#input-range-white::-moz-range-thumb {
+    background: #FFF;
+}
+#input-range-white::-ms-thumb {
+    background: #FFF;
 }
 
 #schedule {

@@ -149,13 +149,14 @@ function setup() {
         success: updateSlidersFromJson,
     });
 
-
     // Populate the room data
     $.ajax({
         type: 'GET',
         url: '/api/get-rooms',
         success: (response) => {
-            console.log(response);
+            $('#living-room-check').prop('checked', response['LivingRoom']);
+            $('#office-check').prop('checked', response['Office']);
+            $('#bedroom-check').prop('checked', response['Bedroom']);
         },
     });
 
