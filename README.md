@@ -52,5 +52,12 @@ linker = "arm-linux-gnueabihf-gcc"
 
 ## Rust compilation
 
-Use the provided `deploy-to-pi.sh` to compile the project binaries for the
-Raspberry Pi, and send them over `scp` to the device.
+- Add the location of `arm-linux-gnueabihf-gcc` (from crosstool-ng or
+  Raspberry Pi tools) to the PATH so it can be located by `cargo`:
+
+```
+export PATH=${PATH}:$HOME/x-tools/armv6-rpi-linux-gnueabihf/bin
+```
+
+- Use the provided `deploy-to-pi.sh` to compile the project binaries for the
+  Raspberry Pi, and send them over `scp` to the device.

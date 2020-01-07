@@ -1,8 +1,10 @@
+#!/bin/bash
 # Cross-compile this project for usage on a Raspberry Pi Zero W
 # (arm-unknown-linux-gnueabihf)
 #
 # Inspiration from: https://stackoverflow.com/a/37378989
 
+# Locate OpenSSL lib (must build OpenSSL first)
 export OPENSSL_LIB_DIR=$HOME/packages/openssl-OpenSSL_1_0_2u
 export OPENSSL_INCLUDE_DIR=$HOME/packages/openssl-OpenSSL_1_0_2u/include
 
