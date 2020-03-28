@@ -5,12 +5,17 @@ Server is written in Rust, using the Actix framework.
 
 ## Cross-Compilation Setup
 
-Tested on Arch Linux, with the Raspberry Pi Zero W as a target
+Tested on Ubuntu Linux 18.04, with the Raspberry Pi Zero W as a target
 
-### Tools needed
+### Setup
+- `sudo apt install libssl-dev` (for build on regular x86_64)
+
+- `rustup target add arm-unknown-linux-gnueabihf`
+
 - A version of the `arm-linux-gnueabihf-gcc` compiler
-    - Can be installed with [this AUR package](https://aur.archlinux.org/packages/arm-linux-gnueabihf-gcc-linaro-bin/). Clone the repository then run `makepkg -si`.
-    - Also can use [crosstool-ng](https://github.com/crosstool-ng/crosstool-ng)
+  - This be found inside in the [Raspberry Pi Tools
+  Repository](https://github.com/raspberrypi/tools)
+  - Add the compiler to PATH: `export PATH=$PATH:/<path-to-tools-repo>/arm-bcm2708/gcc-linaro-arm-linux-gnueabihf-raspbian/bin/`
 
 - Build OpenSSL (inspiration from [this StackOverflow post](https://stackoverflow.com/a/37378989))
     - Download a release from [the releases page](https://github.com/openssl/openssl/releases) and extract it

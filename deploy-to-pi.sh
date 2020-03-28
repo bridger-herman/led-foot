@@ -5,8 +5,8 @@
 # Inspiration from: https://stackoverflow.com/a/37378989
 
 # Locate OpenSSL lib (must build OpenSSL first)
-export OPENSSL_LIB_DIR=$HOME/packages/openssl-OpenSSL_1_0_2u
-export OPENSSL_INCLUDE_DIR=$HOME/packages/openssl-OpenSSL_1_0_2u/include
+export OPENSSL_LIB_DIR=$HOME/GitHub/openssl-OpenSSL_1_1_1e
+export OPENSSL_INCLUDE_DIR=$HOME/GitHub/openssl-OpenSSL_1_1_1e/include
 
 # Clean up from any previous binaries to reduce overall file size
 cargo clean
