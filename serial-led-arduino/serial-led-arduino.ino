@@ -112,13 +112,6 @@ void allRooms(int state) {
 
 }
 
-// Restore the room relay state from roomState
-void restoreRelayState() {
-  for (int i = 0; i < NUM_ROOMS; i++) {
-    digitalWrite(ROOMS[i], roomState[i]);
-  }
-}
-
 void colorCmd(unsigned char buf[BUFSIZE]) {
   // Convert from bytes to shorts
   int redValue = ((int) buf[1] << 8) | (int) buf[2];
@@ -145,25 +138,32 @@ void clearRoomState() {
   }
 }
 
-void roomCmd(unsigned char buf[BUFSIZE]) {
-  if (!allOff) {
-    clearRoomState();
-    for (int i = 1; i < BUFSIZE; i++) {
-      switch (buf[i]) {
-        case LIVING_ROOM:
-          roomState[0] = HIGH;
-          break;
-        case OFFICE:
-          roomState[1] = HIGH;
-          break;
-        case BEDROOM:
-          roomState[2] = HIGH;
-          break;
-        default:
-          break;
-      }
-    }
+// Restore the room relay state from roomState
+void restoreRelayState() {
+  for (int i = 0; i < NUM_ROOMS; i++) {
+    digitalWrite(ROOMS[i], roomState[i]);
+  }
+}
 
+void roomCmd(unsigned char buf[BUFSIZE]) {
+  clearRoomState();
+  for (int i = 1; i < BUFSIZE; i++) {
+    switch (buf[i]) {
+      case LIVING_ROOM:
+        roomState[0] = HIGH;
+        break;
+      case OFFICE:
+        roomState[1] = HIGH;
+        break;
+      case BEDROOM:
+        roomState[2] = HIGH;
+        break;
+      default:
+        break;
+    }
+  }
+
+  if (!allOff) {
     // Send the commands to the relays
     restoreRelayState();
   }
