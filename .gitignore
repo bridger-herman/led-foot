@@ -3,5 +3,5 @@
 Cargo.lock
 *.swp
 *.orig
-schedules
+schedule.json
 nohup.out

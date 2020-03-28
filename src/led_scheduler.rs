@@ -4,9 +4,7 @@ use std::io::prelude::*;
 use chrono::prelude::*;
 use serde_json;
 
-use crate::room_manager::Room;
-
-const SCHEDULE_FILE: &str = "schedules/schedule.json";
+const SCHEDULE_FILE: &str = "schedule.json";
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct LedAlarm {
@@ -103,15 +101,11 @@ impl LedScheduler {
             debug!("Reset active to None");
         }
     }
-}
 
-impl Default for LedScheduler {
-    fn default() -> Self {
-        let mut file =
-            File::open(SCHEDULE_FILE).expect("Unable to open schedule file");
+    pub fn try_from_schedule_file() -> Result<Self, std::io::Error> {
+        let mut file = File::open(SCHEDULE_FILE)?;
         let mut contents = String::new();
-        file.read_to_string(&mut contents)
-            .expect("Unable to read file");
+        file.read_to_string(&mut contents)?;
 
         let alarms: Vec<LedAlarm> = serde_json::from_str(&contents)
             .expect("Unable to parse JSON schedule file");
@@ -123,9 +117,23 @@ impl Default for LedScheduler {
             );
         }
 
-        Self {
+        Ok(Self {
             alarms,
             current_active: None,
+        })
+    }
+}
+
+impl Default for LedScheduler {
+    fn default() -> Self {
+        if let Ok(schedule) = Self::try_from_schedule_file() {
+            schedule
+        } else {
+            debug!("No schedule was detected or schedule was corrupt");
+            Self {
+                alarms: vec![],
+                current_active: None,
+            }
         }
     }
 }
