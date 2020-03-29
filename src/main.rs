@@ -222,7 +222,7 @@ fn main() -> io::Result<()> {
                 },
             ))
     })
-    .workers(2)
+    .workers(4)
     .bind("0.0.0.0:5000")?
     .start();
 
