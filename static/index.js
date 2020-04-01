@@ -26,17 +26,24 @@ function loadSequence(name) {
     });
 }
 
+function parseTime(timeStr) {
+    let parts = timeStr.split(':');
+    return {
+        hour: parts[0],
+        minute: parts[1],
+    };
+}
+
 function updateSchedule() {
     let schedule = [];
     let scheduleElements = $('.schedule-element');
     scheduleElements.each(function (index, element) {
-        let hour = $(element).find('.hour-input').val();
-        let minute = $(element).find('.minute-input').val();
+        let time = parseTime($(element).find('.time').val());
         let days = $(element).find('.days-input').val();
         schedule.push({
             days: days.split(','),
-            hour: hour,
-            minute: minute,
+            hour: time.hour,
+            minute: time.minute,
             sequence: $(element).find('img').attr('src'),
         });
     });
@@ -56,30 +63,11 @@ function makeScheduleElement(data) {
     return $('<div/>', {
         class: 'schedule-element'
     }).append(
-        $('<input/>', {
-            class: 'hour-input',
-            value: data.hour,
-            type: 'number',
-            min: 0, max: 23,
-            on: {
-                change: updateSchedule
-            }
-        })
-    ).append(
-        $('<label/>', {text: 'Hour'})
-    ).append(
-        $('<input/>', {
-            class: 'minute-input',
-            value: data.minute,
-            type: 'number',
-            min: 0,
-            max: 59,
-            on: {
-                change: updateSchedule
-            }
-        })
-    ).append(
-        $('<label/>', {text: 'Minute'})
+        $('<input>', {
+            type: 'text',
+            class: 'time time-picker',
+            value: `${data.hour}:${data.minute}`,
+        }).on('change', updateSchedule)
     ).append(
         $('<input/>', {
             value: data.days,
@@ -203,6 +191,9 @@ function setup() {
                 $('#schedule')
                     .append(makeScheduleElement(response[i]))
             }
+
+            // Once all the schedules are done loading, populate the time pickers
+            $('.time-picker').clockTimePicker();
         },
     });
 }
