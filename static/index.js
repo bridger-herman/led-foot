@@ -15,15 +15,10 @@ function stripName(sequencePath) {
 
 function loadSequence(name) {
     let data = {'name': name};
-    $.ajax({
-        type: 'POST',
+    $.post({
         url: '/api/set-sequence',
         data: JSON.stringify(data, null, '\t'),
-        error: function(err) {
-            console.log('error setting sequence');
-            console.log(err);
-        }
-    });
+    }).error((err) => console.log(`Error setting sequence:\n${err}`));
 }
 
 function parseTime(timeStr) {
@@ -37,7 +32,7 @@ function parseTime(timeStr) {
 function updateSchedule() {
     let schedule = [];
     let scheduleElements = $('.schedule-element');
-    scheduleElements.each(function (index, element) {
+    scheduleElements.each((_index, element) => {
         let time = parseTime($(element).find('.time').val());
         let days = $(element).find('.days-input').val();
         schedule.push({
@@ -48,19 +43,14 @@ function updateSchedule() {
         });
     });
 
-    $.ajax({
-        type: 'POST',
+    $.post({
         url: '/api/set-schedule',
         data: JSON.stringify(schedule, null, '\t'),
-        error: function(err) {
-            console.log('error setting schedule');
-            console.log(err);
-        }
-    });
+    }).error((err) => console.log(`Error setting schedule:\n${err}`));
 }
 
 function makeScheduleElement(data) {
-    return $('<div/>', {
+    return $('<div>', {
         class: 'schedule-element'
     }).append(
         $('<input>', {
@@ -69,17 +59,14 @@ function makeScheduleElement(data) {
             value: `${data.hour}:${data.minute}`,
         }).on('change', updateSchedule)
     ).append(
-        $('<input/>', {
+        $('<input>', {
             value: data.days,
             class: 'days-input',
-            on: {
-                change: updateSchedule
-            }
-        })
+        }).on('change', updateSchedule)
     ).append(
-        $('<label/>', {text: 'Days'})
+        $('<label>', {text: 'Days'})
     ).append(
-        $('<img/>', {src: data.sequence})
+        $('<img>', {src: data.sequence})
     );
 }
 
@@ -109,8 +96,7 @@ function setup() {
             b: parseFloat($('#input-range-blue').val()),
             w: parseFloat($('#input-range-white').val()),
         };
-        $.ajax({
-            type: 'POST',
+        $.post({
             data: JSON.stringify(data, null, '\t'),
             url: '/api/set-rgbw',
         });
@@ -123,80 +109,68 @@ function setup() {
             Office: $('#office-check').prop('checked'),
             Bedroom: $('#bedroom-check').prop('checked'),
         };
-        $.ajax({
-            type: 'POST',
+        $.post({
             data: JSON.stringify(data, null, '\t'),
             url: '/api/set-rooms',
         });
     });
 
     // Populate all the current color values from the server side
-    $.ajax({
-        type: 'GET',
+    $.get({
         url: '/api/get-rgbw',
-        success: updateSlidersFromJson,
-    });
+    }).then(updateSlidersFromJson);
 
     // Populate the room data
-    $.ajax({
-        type: 'GET',
+    $.get({
         url: '/api/get-rooms',
-        success: (response) => {
-            $('#living-room-check').prop('checked', response['LivingRoom']);
-            $('#office-check').prop('checked', response['Office']);
-            $('#bedroom-check').prop('checked', response['Bedroom']);
-        },
+    }).then((response) => {
+        $('#living-room-check').prop('checked', response['LivingRoom']);
+        $('#office-check').prop('checked', response['Office']);
+        $('#bedroom-check').prop('checked', response['Bedroom']);
     });
 
-    $.ajax({
-        type: 'GET',
+    $.get({
         url: '/api/get-sequences',
-        success: (allSequences) => {
-            for (let sequence in allSequences) {
-                let s = allSequences[sequence];
-                $('#favorite-list')
-                    .append(
-                        $('<li/>')
-                        .append(
-                            $('<div/>', {
-                                class: 'favorite-thumb',
-                                attr: {
-                                    sequencePath: s,
-                                },
-                                on: {
-                                    click: function(event) {
-                                        let text =
-                                            $(event.target)
-                                            .parent('.favorite-thumb')
-                                            .attr('sequencePath');
-                                        loadSequence(text);
-                                    }
-                                }
-                            })
-                            .append($('<img/>', {attr: {src: s}}))
-                            .append($('<p/>', {text: stripName(s)}))
-                        )
-                    );
-            }
+    }).then((allSequences) => {
+        for (let sequence in allSequences) {
+            let s = allSequences[sequence];
+            $('#favorite-list').append(
+                $('<li>').append(
+                    $('<div>', {
+                        class: 'favorite-thumb',
+                        data: {
+                            sequencePath: s,
+                        },
+                        on: {
+                            click: function(event) {
+                            }
+                        }
+                    }).on('click', (evt) => {
+                        let text =
+                            $(event.target)
+                            .parent('.favorite-thumb')
+                            .data('sequencePath');
+                        loadSequence(text);
+                    })
+                        .append($('<img>', {attr: {src: s}}))
+                        .append($('<p>', {text: stripName(s)}))
+                )
+            );
         }
     });
 
-    // Populate the favorites list
     // Populate the schedules
-    $.ajax({
-        type: 'GET',
+    $.get({
         url: '/api/get-schedule',
-        success: function(response) {
-            for (let i in response) {
-                $('#schedule')
-                    .append(makeScheduleElement(response[i]))
-            }
+    }).then((response) => {
+        for (const scheduleEntry of response) {
+            $('#schedule')
+                .append(makeScheduleElement(scheduleEntry))
+        }
 
-            // Once all the schedules are done loading, populate the time pickers
-            $('.time-picker').clockTimePicker();
-        },
+        // Once all the schedules are done loading, populate the time pickers
+        $('.time-picker').clockTimePicker();
     });
 }
 
 window.onload = setup;
-

@@ -63,7 +63,7 @@ ul.no-indent {
 }
 
 /* Specific color slider thumb backgrounds */
-#input-range-red::-webkit-slider-thumb { */
+#input-range-red::-webkit-slider-thumb {
     background: #F99;
 }
 #input-range-red::-moz-range-thumb {
@@ -72,7 +72,7 @@ ul.no-indent {
 #input-range-red::-ms-thumb {
     background: #F99;
 }
-#input-range-green::-webkit-slider-thumb { */
+#input-range-green::-webkit-slider-thumb {
     background: #9F9;
 }
 #input-range-green::-moz-range-thumb {
@@ -81,7 +81,7 @@ ul.no-indent {
 #input-range-green::-ms-thumb {
     background: #9F9;
 }
-#input-range-blue::-webkit-slider-thumb { */
+#input-range-blue::-webkit-slider-thumb {
     background: #99F;
 }
 #input-range-blue::-moz-range-thumb {
@@ -90,7 +90,7 @@ ul.no-indent {
 #input-range-blue::-ms-thumb {
     background: #99F;
 }
-#input-range-white::-webkit-slider-thumb { */
+#input-range-white::-webkit-slider-thumb {
     background: #FFF;
 }
 #input-range-white::-moz-range-thumb {
