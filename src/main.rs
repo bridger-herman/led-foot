@@ -131,7 +131,8 @@ fn main() -> io::Result<()> {
     println!("Starting LED server with verbosity {:?}", log_level);
     simple_logger::init_with_level(log_level).expect("Unable to initalize log");
 
-    serial_manager!().setup();
+    // Force the serial manager to get initialized now
+    serial_manager!().send_color(&Color::new(0.0, 0.0, 0.0, 0.0));
 
     let sys = actix_rt::System::new("led-foot");
 

@@ -1,7 +1,7 @@
 //! Manages the LED Arduino serial connection
 
 use std::collections::HashMap;
-use std::io::{Read, Write};
+use std::io::{Error, ErrorKind, Read, Write};
 use std::time::Duration;
 
 use serial::{SerialPort, SystemPort};
@@ -18,6 +18,10 @@ const LIVING_ROOM: u8 = 0x1A;
 const OFFICE: u8 = 0x1C;
 const BEDROOM: u8 = 0x18;
 
+// Magic lengths
+const UPDATE_BYTES: usize = 9;
+const CONFIRMATION_BYTES: usize = 3;
+
 pub struct SerialManager {
     pub serial: Option<SystemPort>,
 }
@@ -27,48 +31,58 @@ impl SerialManager {
         let opened = serial::open(tty_name);
         let serial = if let Ok(mut ser) = opened {
             ser.set_timeout(Duration::from_secs(2)).unwrap();
+            warn!("Using serial: {}", tty_name);
             Some(ser)
         } else {
             warn!(
-                "Unable to initialize serial at {}. Using serial mockup",
+                "Unable to initialize serial at {}. Using Serial Mockup.",
                 tty_name
             );
             None
         };
 
-        Self { serial }
+        let mut mgr = Self { serial };
+        if let Err(io_err) = mgr.setup() {
+            warn!("Unable to initialize LEDs: {}. Using Serial Mockup.", io_err);
+            Self { serial: None }
+        } else {
+            mgr
+        }
     }
 
     /// Performs initial setup with the serial connection to the Arduino, MUST
     /// be run before anything else
-    pub fn setup(&mut self) {
+    pub fn setup(&mut self) -> Result<(), Error> {
         if let Some(ref mut ser) = self.serial {
             debug!("Setting up serial");
             // Read the initial statement "I\r\n" that the Arduino sends
-            let mut read_buf: [u8; 3] = [0; 3];
-            ser.read_exact(&mut read_buf)
-                .expect("Couldn't read initializer bytes");
+            let mut read_buf: [u8; CONFIRMATION_BYTES] =
+                [0; CONFIRMATION_BYTES];
+            ser.read_exact(&mut read_buf)?;
 
             if read_buf != "I\r\n".as_bytes() {
-                error!("Serial initialization reply didn't match `I` (received `{:?}` instead)", read_buf);
+                return Err(Error::new(ErrorKind::Other, format!("Serial initialization reply didn't match `I` (received `{:?}` instead)", read_buf)));
             }
 
             // Send the default color
-            let write_bytes: [u8; 9] =
-                <[u8; 9]>::from(&led_system!().current_color);
-            ser.write_all(&write_bytes)
-                .expect("Couldn't write default color");
+            let write_bytes: [u8; UPDATE_BYTES] =
+                <[u8; UPDATE_BYTES]>::from(&led_system!().current_color);
+            ser.write_all(&write_bytes)?;
 
             // Receive confirmation bytes "C\r\n"
-            let mut read_buf: [u8; 3] = [0; 3];
-            ser.read_exact(&mut read_buf)
-                .expect("Couldn't read initial confirmation");
+            let mut read_buf: [u8; CONFIRMATION_BYTES] =
+                [0; CONFIRMATION_BYTES];
+            ser.read_exact(&mut read_buf)?;
 
             if read_buf != "C\r\n".as_bytes() {
-                error!("Serial color setup reply didn't match `C` (received `{:?}` instead)", read_buf);
-            } else {
-                debug!("Finished serial setup");
+                return Err(Error::new(ErrorKind::Other, format!("Serial color setup reply didn't match `C` (received `{:?}` instead)", read_buf)));
             }
+
+            debug!("Finished serial setup");
+            Ok(())
+        } else {
+            // If there's no serial, there's no error to speak of
+            Ok(())
         }
     }
 
@@ -76,13 +90,15 @@ impl SerialManager {
     pub fn send_color(&mut self, color: &Color) {
         if let Some(ref mut ser) = self.serial {
             // Send the color
-            let write_bytes: [u8; 9] = <[u8; 9]>::from(color);
+            let write_bytes: [u8; UPDATE_BYTES] =
+                <[u8; UPDATE_BYTES]>::from(color);
             debug!("sending bytes: {:?}", write_bytes);
             ser.write_all(&write_bytes)
                 .expect("Couldn't write color bytes");
 
             // Receive confirmation bytes "C\r\n"
-            let mut read_buf: [u8; 3] = [0; 3];
+            let mut read_buf: [u8; CONFIRMATION_BYTES] =
+                [0; CONFIRMATION_BYTES];
             ser.read_exact(&mut read_buf)
                 .expect("Couldn't read confirmation");
 
@@ -114,13 +130,14 @@ impl SerialManager {
     pub fn send_rooms(&mut self, state: &HashMap<Room, bool>) {
         if let Some(ref mut ser) = self.serial {
             // Send the color
-            let write_bytes: [u8; 9] = rooms_to_bytes(state);
+            let write_bytes: [u8; UPDATE_BYTES] = rooms_to_bytes(state);
             debug!("sending bytes: {:?}", write_bytes);
             ser.write_all(&write_bytes)
                 .expect("Couldn't write color bytes");
 
             // Receive confirmation bytes "R\r\n"
-            let mut read_buf: [u8; 3] = [0; 3];
+            let mut read_buf: [u8; CONFIRMATION_BYTES] =
+                [0; CONFIRMATION_BYTES];
             ser.read_exact(&mut read_buf)
                 .expect("Couldn't read confirmation");
 
@@ -138,24 +155,14 @@ impl SerialManager {
 
 impl Default for SerialManager {
     fn default() -> Self {
-        Self {
-            serial: {
-                let serial = serial::open("/dev/ttyACM0");
-                if let Ok(mut ser) = serial {
-                    ser.set_timeout(Duration::from_secs(2)).unwrap();
-                    Some(ser)
-                } else {
-                    None
-                }
-            },
-        }
+        Self::new("/dev/ttyACM0")
     }
 }
 
 /// Convert to the format that the Arduino is expecting, including the prefix
 /// magic number COLOR_CMD
-impl From<&Color> for [u8; 9] {
-    fn from(color: &Color) -> [u8; 9] {
+impl From<&Color> for [u8; UPDATE_BYTES] {
+    fn from(color: &Color) -> [u8; UPDATE_BYTES] {
         let color = color.clamped();
 
         let red_int = (color.r * f32::from(<u16>::max_value())).round() as u16;
@@ -192,7 +199,7 @@ impl From<&Color> for [u8; 9] {
 
 /// Convert to the format that the Arduino is expecting, including the prefix
 /// magic number ROOM_CMD
-fn rooms_to_bytes(rooms: &HashMap<Room, bool>) -> [u8; 9] {
+fn rooms_to_bytes(rooms: &HashMap<Room, bool>) -> [u8; UPDATE_BYTES] {
     [
         ROOM_CMD,
         if rooms[&Room::LivingRoom] {
