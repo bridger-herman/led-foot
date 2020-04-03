@@ -1,6 +1,6 @@
 body {
-  background: black;
-  color: white;
+  background: #161515;
+  color: #eee;
 }
 
 @media only screen and (max-width: 1000px) {
@@ -62,44 +62,6 @@ ul.no-indent {
   padding-left: 0;
 }
 
-/* Specific color slider thumb backgrounds */
-#input-range-red::-webkit-slider-thumb {
-    background: #F99;
-}
-#input-range-red::-moz-range-thumb {
-    background: #F99;
-}
-#input-range-red::-ms-thumb {
-    background: #F99;
-}
-#input-range-green::-webkit-slider-thumb {
-    background: #9F9;
-}
-#input-range-green::-moz-range-thumb {
-    background: #9F9;
-}
-#input-range-green::-ms-thumb {
-    background: #9F9;
-}
-#input-range-blue::-webkit-slider-thumb {
-    background: #99F;
-}
-#input-range-blue::-moz-range-thumb {
-    background: #99F;
-}
-#input-range-blue::-ms-thumb {
-    background: #99F;
-}
-#input-range-white::-webkit-slider-thumb {
-    background: #FFF;
-}
-#input-range-white::-moz-range-thumb {
-    background: #FFF;
-}
-#input-range-white::-ms-thumb {
-    background: #FFF;
-}
-
 #schedule {
   display: block;
   margin: auto;
@@ -108,6 +70,10 @@ ul.no-indent {
 }
 #schedule img {
   width: 100%;
+}
+
+.schedule-element {
+  display: block;
 }
 
 #rooms {
@@ -124,4 +90,18 @@ ul.no-indent {
 #rooms input[type="checkbox"] {
     height: 6vh;
     width: 6vh;
+}
+
+/* Clock styling */
+.clock-timepicker {
+  width: 100%;
+}
+input.time {
+  min-width: 0 !important;
+  border: 2px solid gray !important;
+  border-radius: 4px;
+  width: 5em;
+  text-align: center;
+  display: block;
+  margin: 0.25rem auto;
 }

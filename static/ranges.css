@@ -34,7 +34,6 @@ input[type=range] {
 input[type=range]::-webkit-slider-thumb {
     -webkit-appearance: none;
     -webkit-filter: blur(6px);
-    /* border: 5px solid #000000; */
     height: 72px;
     width: 72px;
     border-radius: 36px;
@@ -45,7 +44,6 @@ input[type=range]::-webkit-slider-thumb {
 /* All the same stuff for Firefox */
 input[type=range]::-moz-range-thumb {
     filter: blur(6px);
-    /* border: 5px solid #000000; */
     height: 72px;
     width: 72px;
     border-radius: 36px;
@@ -55,9 +53,46 @@ input[type=range]::-moz-range-thumb {
 /* All the same stuff for IE */
 input[type=range]::-ms-thumb {
     filter: blur(6px);
-    /* border: 5px solid #000000; */
     height: 72px;
     width: 72px;
     border-radius: 36px;
     cursor: pointer;
-}
+}
+
+/* Specific color slider thumb backgrounds */
+#input-range-red::-webkit-slider-thumb {
+    background: #F99;
+}
+#input-range-red::-moz-range-thumb {
+    background: #F99;
+}
+#input-range-red::-ms-thumb {
+    background: #F99;
+}
+#input-range-green::-webkit-slider-thumb {
+    background: #9F9;
+}
+#input-range-green::-moz-range-thumb {
+    background: #9F9;
+}
+#input-range-green::-ms-thumb {
+    background: #9F9;
+}
+#input-range-blue::-webkit-slider-thumb {
+    background: #99F;
+}
+#input-range-blue::-moz-range-thumb {
+    background: #99F;
+}
+#input-range-blue::-ms-thumb {
+    background: #99F;
+}
+#input-range-white::-webkit-slider-thumb {
+    background: #FFF;
+}
+#input-range-white::-moz-range-thumb {
+    background: #FFF;
+}
+#input-range-white::-ms-thumb {
+    background: #FFF;
+}
