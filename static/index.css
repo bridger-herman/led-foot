@@ -1,6 +1,7 @@
 body {
   background: #161515;
   color: #eee;
+  font-size: 30px;
 }
 
 @media only screen and (max-width: 1000px) {
@@ -34,27 +35,28 @@ body {
   flex-direction: row;
   flex-wrap: wrap;
   align-items: center;
+  justify-content: center;
   list-style: none;
 }
 
 .favorite-thumb {
   position: relative;
-  width: 18vw;
-  height: 10vh;
-  border: 1px solid #ddd;
+  width: 10em;
+  height: 5em;
+  border: 2px solid gray;
+  border-radius: 4px;
+  margin: 0.25rem;
 }
 .favorite-thumb img {
   width: 100%;
   height: 100%;
 }
 .favorite-thumb p {
-  margin: 0;
+  margin: 0 0.2em;
   position: absolute;
   left: 5%;
   bottom: 8%;
   text-shadow: 0.1em 0.1em 0.2em black;
-  font-size: 14pt;
-  font-weight: bold;
   font-family: sans-serif;
 }
 
@@ -66,14 +68,25 @@ ul.no-indent {
   display: block;
   margin: auto;
   border: 1px solid white;
-  width: 18vw;
+  width: 30rem;
 }
 #schedule img {
   width: 100%;
 }
 
-.schedule-element {
+/* Clock styling */
+.clock-timepicker {
+  width: 100%;
+}
+input.time {
+  min-width: 0 !important;
+  border: 2px solid gray;
+  border-radius: 4px;
+  width: 5em;
+  text-align: center;
   display: block;
+  margin: 0.25rem auto;
+  font-size: inherit;
 }
 
 #rooms {
@@ -84,24 +97,9 @@ ul.no-indent {
     display: flex;
     align-items: center;
     padding: 0 10px;
-    font-size: 24px;
     font-family: sans-serif;
 }
 #rooms input[type="checkbox"] {
-    height: 6vh;
-    width: 6vh;
-}
-
-/* Clock styling */
-.clock-timepicker {
-  width: 100%;
-}
-input.time {
-  min-width: 0 !important;
-  border: 2px solid gray !important;
-  border-radius: 4px;
-  width: 5em;
-  text-align: center;
-  display: block;
-  margin: 0.25rem auto;
+    height: 8em;
+    width: 8em;
 }

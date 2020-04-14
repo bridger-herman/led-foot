@@ -18,7 +18,7 @@ function loadSequence(name) {
     $.post({
         url: '/api/set-sequence',
         data: JSON.stringify(data, null, '\t'),
-    }).error((err) => console.log(`Error setting sequence:\n${err}`));
+    }).catch((err) => console.log(`Error setting sequence:\n${err}`));
 }
 
 function parseTime(timeStr) {
@@ -46,7 +46,7 @@ function updateSchedule() {
     $.post({
         url: '/api/set-schedule',
         data: JSON.stringify(schedule, null, '\t'),
-    }).error((err) => console.log(`Error setting schedule:\n${err}`));
+    }).catch((err) => console.log(`Error setting schedule:\n${err}`));
 }
 
 function makeScheduleElement(data) {
@@ -141,10 +141,6 @@ function setup() {
                         data: {
                             sequencePath: s,
                         },
-                        on: {
-                            click: function(event) {
-                            }
-                        }
                     }).on('click', (evt) => {
                         let text =
                             $(event.target)
@@ -169,7 +165,15 @@ function setup() {
         }
 
         // Once all the schedules are done loading, populate the time pickers
-        $('.time-picker').clockTimePicker();
+        $('.time-picker').clockTimePicker({
+            popupWidthOnDesktop: $(document).width(),
+            fonts: {
+                fontFamily: 'Arial',
+                clockOuterCircleFontSize: 50,
+                clockInnerCircleFontSize: 45,
+                buttonFontSize: 55,
+            },
+        });
     });
 }
 
