@@ -105,13 +105,14 @@ function setup() {
     // Setup ajax POST requests to update active rooms
     $('#rooms input').on('change', function() {
         let data = {
-            LivingRoom: $('#living-room-check').prop('checked'),
-            Office: $('#office-check').prop('checked'),
-            Bedroom: $('#bedroom-check').prop('checked'),
+            living_room: $('#living-room-check').prop('checked'),
+            office: $('#office-check').prop('checked'),
+            bedroom: $('#bedroom-check').prop('checked'),
         };
         $.post({
-            data: JSON.stringify(data, null, '\t'),
+            data: JSON.stringify(data),
             url: '/api/set-rooms',
+            contentType: 'application/json; charset=utf-8',
         });
     });
 

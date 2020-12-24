@@ -2,6 +2,8 @@ use std::collections::HashMap;
 
 use serde_derive::{Deserialize, Serialize};
 
+use crate::led_state::SERIAL_MANAGER;
+
 /// Which rooms are currently active
 #[derive(Eq, PartialEq, Hash, Serialize, Deserialize, Debug, Clone)]
 pub enum Room {
@@ -11,40 +13,51 @@ pub enum Room {
 }
 
 /// Control which rooms are currently active
-#[derive(Debug)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct RoomManager {
-    active_rooms: HashMap<Room, bool>,
+    // active_rooms: HashMap<Room, bool>,
+    pub living_room: bool,
+    pub office: bool,
+    pub bedroom: bool,
 }
 
 impl RoomManager {
     /// Set only this room to be active
     pub fn set_active_only(&mut self, room: Room) {
-        self.active_rooms.insert(Room::LivingRoom, false);
-        self.active_rooms.insert(Room::Bedroom, false);
-        self.active_rooms.insert(Room::Office, false);
+        self.living_room = false;
+        self.office = false;
+        self.bedroom = false;
+        match room {
+            Room::LivingRoom => self.living_room = true,
+            Room::Office => self.office = true,
+            Room::Bedroom => self.bedroom = true,
+        }
 
-        self.active_rooms.insert(room, true);
-
-        serial_manager!().send_rooms(&self.active_rooms);
+        if let Ok(mut man) = SERIAL_MANAGER.get().write() {
+            man.send_rooms(&self);
+        }
     }
 
-    pub fn set_active_rooms(&mut self, active_rooms: HashMap<Room, bool>) {
-        self.active_rooms = active_rooms;
-        serial_manager!().send_rooms(&self.active_rooms);
+    pub fn set_active_rooms(&mut self, active_rooms: &Self) {
+        self.living_room = active_rooms.living_room;
+        self.office = active_rooms.office;
+        self.bedroom = active_rooms.bedroom;
+        if let Ok(mut man) = SERIAL_MANAGER.get().write() {
+            man.send_rooms(&self);
+        }
     }
 
-    pub fn active_rooms(&self) -> &HashMap<Room, bool> {
-        &self.active_rooms
+    pub fn active_rooms(&self) -> &Self {
+        &self
     }
 }
 
 impl Default for RoomManager {
     fn default() -> Self {
-        let mut active_rooms = HashMap::new();
-        active_rooms.insert(Room::LivingRoom, false);
-        active_rooms.insert(Room::Office, false);
-        active_rooms.insert(Room::Bedroom, false);
-
-        Self { active_rooms }
+        Self { 
+            living_room: false,
+            office: false,
+            bedroom: false,
+        }
     }
 }

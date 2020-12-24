@@ -7,7 +7,7 @@ use std::time::Duration;
 use serial::{SerialPort, SystemPort};
 
 use crate::color::Color;
-use crate::room_manager::Room;
+use crate::room_manager::{Room, RoomManager};
 
 // Magic numbers for color or room relay commands
 const COLOR_CMD: u8 = 0xC0;
@@ -64,9 +64,10 @@ impl SerialManager {
                 return Err(Error::new(ErrorKind::Other, format!("Serial initialization reply didn't match `I` (received `{:?}` instead)", read_buf)));
             }
 
-            // Send the default color
-            let write_bytes: [u8; UPDATE_BYTES] =
-                <[u8; UPDATE_BYTES]>::from(&led_system!().current_color);
+            // Send the default color to be black
+            // let write_bytes: [u8; UPDATE_BYTES] =
+            //     <[u8; UPDATE_BYTES]>::from(&led_system!().current_color);
+            let write_bytes: [u8; UPDATE_BYTES] = [0; UPDATE_BYTES];
             ser.write_all(&write_bytes)?;
 
             // Receive confirmation bytes "C\r\n"
@@ -127,7 +128,7 @@ impl SerialManager {
     }
 
     /// Send the current room state to the Arduino
-    pub fn send_rooms(&mut self, state: &HashMap<Room, bool>) {
+    pub fn send_rooms(&mut self, state: &RoomManager) {
         if let Some(ref mut ser) = self.serial {
             // Send the color
             let write_bytes: [u8; UPDATE_BYTES] = rooms_to_bytes(state);
@@ -199,16 +200,12 @@ impl From<&Color> for [u8; UPDATE_BYTES] {
 
 /// Convert to the format that the Arduino is expecting, including the prefix
 /// magic number ROOM_CMD
-fn rooms_to_bytes(rooms: &HashMap<Room, bool>) -> [u8; UPDATE_BYTES] {
+fn rooms_to_bytes(rooms: &RoomManager) -> [u8; UPDATE_BYTES] {
     [
         ROOM_CMD,
-        if rooms[&Room::LivingRoom] {
-            LIVING_ROOM
-        } else {
-            0x00
-        },
-        if rooms[&Room::Office] { OFFICE } else { 0x00 },
-        if rooms[&Room::Bedroom] { BEDROOM } else { 0x00 },
+        if rooms.living_room { LIVING_ROOM } else { 0x00 },
+        if rooms.office { OFFICE } else { 0x00 },
+        if rooms.bedroom { BEDROOM } else { 0x00 },
         0x00,
         0x00,
         0x00,
