@@ -4,7 +4,7 @@ use std::time::{Duration, Instant};
 
 use crate::color::Color;
 use crate::led_sequence::{LedSequence, RESOLUTION};
-use crate::led_state::{SERIAL_MANAGER, is_interrupted, set_interrupt};
+use crate::led_state::{is_interrupted, set_interrupt, SERIAL_MANAGER};
 
 /// Controls the RGBW LEDs
 pub struct LedSystem {

@@ -46,7 +46,8 @@ function updateSchedule() {
 
     $.post({
         url: '/api/set-schedule',
-        data: JSON.stringify(schedule, null, '\t'),
+        data: JSON.stringify(schedule),
+        contentType: 'application/json; charset=utf-8',
     }).catch((err) => console.log(`Error setting schedule:\n${err}`));
 }
 

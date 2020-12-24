@@ -1,35 +1,38 @@
 #[macro_use]
 extern crate log;
 
-pub mod led_state;
 pub mod color;
 pub mod led_scheduler;
 pub mod led_sequence;
+pub mod led_state;
 pub mod led_system;
 pub mod room_manager;
 pub mod serial_manager;
 // pub mod subscribers;
 
+use std::collections::HashMap;
 use std::thread;
 use std::time::Duration;
-use std::collections::HashMap;
 
 use actix_files::Files;
-use actix_web::{web, get, post, middleware, App, Error, HttpServer, HttpResponse, Result};
 use actix_web::error::ErrorInternalServerError;
+use actix_web::{
+    get, middleware, post, web, App, Error, HttpResponse, HttpServer, Result,
+};
 
 use crate::color::Color;
-// use crate::led_scheduler::LedAlarm;
+use crate::led_scheduler::LedAlarm;
+use crate::led_state::{
+    set_interrupt, LED_SCHEDULER, LED_SYSTEM, ROOM_MANAGER,
+};
 use crate::room_manager::RoomManager;
-// use crate::room_manager::RoomManager;
-use crate::led_state::{LED_SYSTEM, ROOM_MANAGER, LED_SCHEDULER, set_interrupt};
-
 
 #[get("/api/get-rgbw")]
 async fn get_rgbw() -> Result<HttpResponse, Error> {
     if let Ok(ref sys) = LED_SYSTEM.get().read() {
         Ok(HttpResponse::Ok().json(
-            serde_json::to_string(&sys.current_color()).expect("Failed to encode current color")
+            serde_json::to_string(&sys.current_color())
+                .expect("Failed to encode current color"),
         ))
     } else {
         Err(ErrorInternalServerError("Unable to get RGBW data"))
@@ -57,7 +60,8 @@ async fn set_rgbw(payload: web::Json<Color>) -> Result<HttpResponse, Error> {
 async fn get_rooms() -> Result<HttpResponse, Error> {
     if let Ok(ref mgr) = ROOM_MANAGER.get().read() {
         Ok(HttpResponse::Ok().json(
-            serde_json::to_string(mgr.active_rooms()).expect("Failed to encode room list")
+            serde_json::to_string(mgr.active_rooms())
+                .expect("Failed to encode room list"),
         ))
     } else {
         Err(ErrorInternalServerError("Unable to get room data"))
@@ -65,7 +69,9 @@ async fn get_rooms() -> Result<HttpResponse, Error> {
 }
 
 #[post("/api/set-rooms")]
-async fn set_rooms(payload: web::Json<RoomManager>) -> Result<HttpResponse, Error> {
+async fn set_rooms(
+    payload: web::Json<RoomManager>,
+) -> Result<HttpResponse, Error> {
     if let Ok(mut mgr) = ROOM_MANAGER.get().write() {
         mgr.set_active_rooms(&payload);
         Ok(HttpResponse::Ok().json(mgr.active_rooms()))
@@ -76,23 +82,24 @@ async fn set_rooms(payload: web::Json<RoomManager>) -> Result<HttpResponse, Erro
 
 #[get("/api/get-sequences")]
 async fn get_sequences() -> Result<HttpResponse, Error> {
-    let dir_listing =
-        ::std::fs::read_dir("./led-foot-sequences")?;
+    let dir_listing = ::std::fs::read_dir("./led-foot-sequences")?;
     let sequences: Vec<String> = dir_listing
-        .map(|entry| {
-            entry.unwrap().path().to_str().unwrap().to_string()
-        })
+        .map(|entry| entry.unwrap().path().to_str().unwrap().to_string())
         .filter(|path_string| path_string.ends_with(".png"))
         .collect();
 
     Ok(HttpResponse::Ok()
         .content_type("application/json; charset=utf-8")
-        .body(serde_json::to_string(&sequences).expect("Failed to encode sequence list"))
-    )
+        .body(
+            serde_json::to_string(&sequences)
+                .expect("Failed to encode sequence list"),
+        ))
 }
 
 #[post("/api/set-sequence")]
-async fn set_sequence(payload: web::Json<HashMap<String, String>>) -> Result<HttpResponse, Error> {
+async fn set_sequence(
+    payload: web::Json<HashMap<String, String>>,
+) -> Result<HttpResponse, Error> {
     let sequence_name = payload["name"].clone();
     debug!("Setting sequence {}", sequence_name);
     // Signal that we need to interrupt the current sequence
@@ -108,6 +115,34 @@ async fn set_sequence(payload: web::Json<HashMap<String, String>>) -> Result<Htt
         };
     });
     Ok(HttpResponse::Ok().json(format!("{{\"name\": {}}}", payload["name"])))
+}
+
+#[get("/api/get-schedule")]
+async fn get_schedule() -> Result<HttpResponse, Error> {
+    if let Ok(sched) = LED_SCHEDULER.get().read() {
+        Ok(HttpResponse::Ok().json(&sched.alarms))
+    } else {
+        Err(ErrorInternalServerError(
+            "Unable to obtain lock on scheduler",
+        ))
+    }
+}
+
+#[post("/api/set-schedule")]
+async fn set_schedule(
+    payload: web::Json<Vec<LedAlarm>>,
+) -> Result<HttpResponse, Error> {
+    info!("Setting schedule");
+
+    if let Ok(mut sched) = LED_SCHEDULER.get().write() {
+        sched.reset_alarms(&payload);
+        sched.rewrite_schedule();
+        Ok(HttpResponse::Ok().json("{}"))
+    } else {
+        Err(ErrorInternalServerError(
+            "Unable to obtain lock on scheduler",
+        ))
+    }
 }
 
 #[get("/")]
@@ -141,13 +176,14 @@ async fn main() -> std::io::Result<()> {
             // Enable the logger.
             .wrap(middleware::Logger::default())
             // Serve sequences as static files (allow to see file list if user wants)
-            .service(Files::new("/led-foot-sequences", "led-foot-sequences").show_files_listing())
+            .service(
+                Files::new("/led-foot-sequences", "led-foot-sequences")
+                    .show_files_listing(),
+            )
             // Serve the rest of the static files
             .service(Files::new("/static", "static"))
             // index.html
             .service(index)
-            
-
             // The rest of the services for controlling the LEDs
             .service(get_rgbw)
             .service(set_rgbw)
@@ -155,6 +191,8 @@ async fn main() -> std::io::Result<()> {
             .service(set_rooms)
             .service(get_sequences)
             .service(set_sequence)
+            .service(get_schedule)
+            .service(set_schedule)
     })
     .bind("127.0.0.1:8080")?;
 

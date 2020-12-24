@@ -2,10 +2,10 @@ use std::fs::File;
 use std::io::prelude::*;
 
 use chrono::prelude::*;
+use serde_derive::{Deserialize, Serialize};
 use serde_json;
-use serde_derive::{Serialize, Deserialize};
 
-use crate::led_state::{LED_SYSTEM, set_interrupt};
+use crate::led_state::{set_interrupt, LED_SYSTEM};
 
 const SCHEDULE_FILE: &str = "schedule.json";
 

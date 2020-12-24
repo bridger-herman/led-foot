@@ -42,7 +42,10 @@ impl SerialManager {
 
         let mut mgr = Self { serial };
         if let Err(io_err) = mgr.setup() {
-            warn!("Unable to initialize LEDs: {}. Using Serial Mockup.", io_err);
+            warn!(
+                "Unable to initialize LEDs: {}. Using Serial Mockup.",
+                io_err
+            );
             Self { serial: None }
         } else {
             mgr

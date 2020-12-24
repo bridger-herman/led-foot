@@ -51,7 +51,7 @@ impl RoomManager {
 
 impl Default for RoomManager {
     fn default() -> Self {
-        Self { 
+        Self {
             living_room: false,
             office: false,
             bedroom: false,

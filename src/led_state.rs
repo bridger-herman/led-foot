@@ -2,10 +2,10 @@ use std::sync::RwLock;
 
 use state::Storage;
 
+use crate::led_scheduler::LedScheduler;
+use crate::led_system::LedSystem;
 use crate::room_manager::RoomManager;
 use crate::serial_manager::SerialManager;
-use crate::led_system::LedSystem;
-use crate::led_scheduler::LedScheduler;
 
 pub static SERIAL_MANAGER: Storage<RwLock<SerialManager>> = Storage::new();
 pub static ROOM_MANAGER: Storage<RwLock<RoomManager>> = Storage::new();
