@@ -3,6 +3,8 @@ use std::fs::File;
 use std::io::Read;
 use std::path::Path;
 
+use serde_derive::Deserialize;
+
 use crate::color::Color;
 
 /// 30 "frames" per second for smoothness

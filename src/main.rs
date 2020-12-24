@@ -3,9 +3,9 @@ extern crate log;
 
 pub mod led_state;
 pub mod color;
-// pub mod led_scheduler;
-// pub mod led_sequence;
-// pub mod led_system;
+pub mod led_scheduler;
+pub mod led_sequence;
+pub mod led_system;
 pub mod room_manager;
 pub mod serial_manager;
 // pub mod subscribers;

@@ -3,6 +3,7 @@ use std::io::prelude::*;
 
 use chrono::prelude::*;
 use serde_json;
+use serde_derive::{Serialize, Deserialize};
 
 const SCHEDULE_FILE: &str = "schedule.json";
 
@@ -80,14 +81,14 @@ impl LedScheduler {
                             "Starting on schedule: {} {}:{}",
                             day, alarm.hour, alarm.minute
                         );
-                        {
-                            let mut state = led_state!();
-                            let active = state.active();
-                            state.set_changed_from_ui(active);
-                        }
-                        led_system!().update_sequence(&alarm.sequence);
-                        led_system!().run_sequence();
-                        led_state!().set_changed_from_ui(false);
+                        // {
+                        //     let mut state = led_state!();
+                        //     let active = state.active();
+                        //     state.set_changed_from_ui(active);
+                        // }
+                        // led_system!().update_sequence(&alarm.sequence);
+                        // led_system!().run_sequence();
+                        // led_state!().set_changed_from_ui(false);
                         self.current_active = Some(alarm.clone());
                     }
                 }

@@ -4,6 +4,7 @@ use std::time::{Duration, Instant};
 
 use crate::color::Color;
 use crate::led_sequence::{LedSequence, RESOLUTION};
+use crate::led_state::{SERIAL_MANAGER, LED_STATE};
 
 /// Controls the RGBW LEDs
 pub struct LedSystem {
@@ -32,7 +33,10 @@ impl LedSystem {
 
     /// Runs through the current LED sequence
     pub fn run_sequence(&mut self) {
-        led_state!().set_active(true);
+        // led_state!().set_active(true);
+        if let Ok(mut state) = LED_STATE.get().write() {
+            state.set_active(true);
+        }
         if let Some(ref mut seq) = self.current_sequence {
             let start = Instant::now();
             let mut previous_time = Instant::now();
@@ -43,9 +47,11 @@ impl LedSystem {
                 let delay = Duration::from_millis((1000.0 / RESOLUTION) as u64);
                 let error = diff.checked_sub(delay).unwrap_or_default();
                 total_error += error;
-                if led_state!().changed_from_ui() {
-                    info!("interrupting");
-                    break;
+                if let Ok(state) = LED_STATE.get().read() {
+                    if state.changed_from_ui() {
+                        info!("interrupting");
+                        break;
+                    }
                 }
                 let sleep_duration =
                     delay.checked_sub(total_error).unwrap_or_default();
@@ -66,15 +72,19 @@ impl LedSystem {
                     delay,
                 );
 
-                serial_manager!().send_color(&self.current_color);
-                subscribers!().send_color_update(&self.current_color);
+                if let Ok(mut ser) = SERIAL_MANAGER.get().write() {
+                    ser.send_color(&self.current_color);
+                }
+                // subscribers!().send_color_update(&self.current_color);
 
                 previous_time = current_time;
                 current_time = Instant::now();
             }
             debug!("Time: {:?}", start.elapsed());
         }
-        led_state!().set_active(false);
+        if let Ok(mut state) = LED_STATE.get().write() {
+            state.set_active(false);
+        }
     }
 }
 
