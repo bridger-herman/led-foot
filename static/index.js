@@ -79,14 +79,14 @@ function updateSlidersFromJson(data) {
 
 function setup() {
     // Start a WebSocket for updating the sliders in realtime
-    let fullHref = window.location.href;
-    let serverNameRegex = new RegExp('http://(.+):.+');
-    let serverName = serverNameRegex.exec(fullHref)[1];
+    // let fullHref = window.location.href;
+    // let serverNameRegex = new RegExp('http://(.+):.+');
+    // let serverName = serverNameRegex.exec(fullHref)[1];
 
-    let ws = new WebSocket(`ws://${serverName}:9001`);
-    ws.onmessage = (evt) => {
-        updateSlidersFromJson(JSON.parse(evt.data));
-    };
+    // let ws = new WebSocket(`ws://${serverName}:9001`);
+    // ws.onmessage = (evt) => {
+    //     updateSlidersFromJson(JSON.parse(evt.data));
+    // };
 
     // Setup ajax POST requests to update RGBW leds
     $('.input-range-container input').on('change', function() {
@@ -97,8 +97,9 @@ function setup() {
             w: parseFloat($('#input-range-white').val()),
         };
         $.post({
-            data: JSON.stringify(data, null, '\t'),
+            data: JSON.stringify(data),
             url: '/api/set-rgbw',
+            contentType: 'application/json; charset=utf-8',
         });
     });
 
@@ -119,7 +120,7 @@ function setup() {
     // Populate all the current color values from the server side
     $.get({
         url: '/api/get-rgbw',
-    }).then(updateSlidersFromJson);
+    }).then((data) => updateSlidersFromJson(JSON.parse(data)));
 
     // Populate the room data
     $.get({

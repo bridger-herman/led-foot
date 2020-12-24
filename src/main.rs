@@ -11,35 +11,38 @@ pub mod serial_manager;
 // pub mod subscribers;
 
 use actix_files::Files;
-use actix_web::{web, get, post, middleware, App, Error, HttpServer, HttpRequest,
-HttpResponse, Result};
+use actix_web::{web, get, post, middleware, App, Error, HttpServer, HttpResponse, Result};
 use actix_web::error::ErrorInternalServerError;
-use actix_web::http::{header, StatusCode};
+use actix_web::http::header;
 
-// use crate::color::Color;
+use crate::color::Color;
 // use crate::led_scheduler::LedAlarm;
 use crate::room_manager::RoomManager;
-// use crate::led_state::LedState;
 // use crate::room_manager::RoomManager;
-use crate::led_state::ROOM_MANAGER;
-
+use crate::led_state::{LED_SYSTEM, ROOM_MANAGER};
 
 
 #[get("/api/get-rgbw")]
 async fn get_rgbw() -> Result<HttpResponse> {
-    Ok(HttpResponse::build(StatusCode::OK)
-        .content_type("application/json; charset=utf-8")
-        .body("{\"test\": 2}")
-    )
+    if let Ok(ref sys) = LED_SYSTEM.get().read() {
+        Ok(HttpResponse::Ok().json(
+            serde_json::to_string(&sys.current_color()).expect("Failed to encode current color")
+        ))
+    } else {
+        Err(ErrorInternalServerError("Unable to get RGBW data"))
+    }
 }
 
 #[post("/api/set-rgbw")]
-async fn set_rgbw(req: HttpRequest) -> Result<HttpResponse> {
-    println!("{:?}", req);
-    Ok(HttpResponse::build(StatusCode::OK)
-        .content_type("application/json; charset=utf-8")
-        .body("{\"test\": 2}")
-    )
+async fn set_rgbw(payload: web::Json<Color>) -> Result<HttpResponse> {
+    if let Ok(mut sys) = LED_SYSTEM.get().write() {
+        sys.update_color(&payload);
+        sys.run_sequence();
+
+        Ok(HttpResponse::Ok().json(sys.current_color()))
+    } else {
+        Err(ErrorInternalServerError("Unable to set RGBW data"))
+    }
 }
 
 #[get("/api/get-rooms")]
@@ -57,7 +60,7 @@ async fn get_rooms() -> Result<HttpResponse, Error> {
 async fn set_rooms(payload: web::Json<RoomManager>) -> Result<HttpResponse> {
     if let Ok(mut mgr) = ROOM_MANAGER.get().write() {
         mgr.set_active_rooms(&payload);
-        Ok(HttpResponse::Ok().json("{}"))
+        Ok(HttpResponse::Ok().json(mgr.active_rooms()))
     } else {
         Err(ErrorInternalServerError("Unable to set room data"))
     }

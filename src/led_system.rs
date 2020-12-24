@@ -4,15 +4,37 @@ use std::time::{Duration, Instant};
 
 use crate::color::Color;
 use crate::led_sequence::{LedSequence, RESOLUTION};
-use crate::led_state::{SERIAL_MANAGER, LED_STATE};
+use crate::led_state::SERIAL_MANAGER;
 
 /// Controls the RGBW LEDs
 pub struct LedSystem {
-    pub current_color: Color,
-    pub current_sequence: Option<LedSequence>,
+    /// Current color that the LEDs are
+    current_color: Color,
+
+    /// Current sequence the LEDs are running, if any
+    current_sequence: Option<LedSequence>,
+
+    /// Has the current color been changed from the UI?
+    changed_from_ui: bool,
+
+    /// Is the LED system currently running a sequence or transition?
+    active: bool,
 }
 
 impl LedSystem {
+    pub fn current_color(&self) -> &Color {
+        &self.current_color
+    }
+    pub fn current_sequence(&self) -> &Option<LedSequence> {
+        &self.current_sequence
+    }
+    pub fn set_current_color(&mut self, color: &Color) {
+        self.current_color = color.clone();
+    }
+    pub fn set_current_sequence(&mut self, sequence: Option<LedSequence>) {
+        self.current_sequence = sequence;
+    }
+
     /// Updates the current color
     pub fn update_color(&mut self, color: &Color) {
         self.current_sequence =
@@ -33,10 +55,7 @@ impl LedSystem {
 
     /// Runs through the current LED sequence
     pub fn run_sequence(&mut self) {
-        // led_state!().set_active(true);
-        if let Ok(mut state) = LED_STATE.get().write() {
-            state.set_active(true);
-        }
+        self.active = true;
         if let Some(ref mut seq) = self.current_sequence {
             let start = Instant::now();
             let mut previous_time = Instant::now();
@@ -47,11 +66,9 @@ impl LedSystem {
                 let delay = Duration::from_millis((1000.0 / RESOLUTION) as u64);
                 let error = diff.checked_sub(delay).unwrap_or_default();
                 total_error += error;
-                if let Ok(state) = LED_STATE.get().read() {
-                    if state.changed_from_ui() {
-                        info!("interrupting");
-                        break;
-                    }
+                if self.changed_from_ui {
+                    info!("interrupting");
+                    break;
                 }
                 let sleep_duration =
                     delay.checked_sub(total_error).unwrap_or_default();
@@ -82,9 +99,7 @@ impl LedSystem {
             }
             debug!("Time: {:?}", start.elapsed());
         }
-        if let Ok(mut state) = LED_STATE.get().write() {
-            state.set_active(false);
-        }
+        self.active = false;
     }
 }
 
@@ -93,6 +108,8 @@ impl Default for LedSystem {
         Self {
             current_color: Color::default(),
             current_sequence: None,
+            changed_from_ui: false,
+            active: false,
         }
     }
 }

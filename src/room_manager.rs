@@ -1,5 +1,3 @@
-use std::collections::HashMap;
-
 use serde_derive::{Deserialize, Serialize};
 
 use crate::led_state::SERIAL_MANAGER;
@@ -15,7 +13,6 @@ pub enum Room {
 /// Control which rooms are currently active
 #[derive(Debug, Serialize, Deserialize)]
 pub struct RoomManager {
-    // active_rooms: HashMap<Room, bool>,
     pub living_room: bool,
     pub office: bool,
     pub bedroom: bool,

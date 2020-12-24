@@ -1,13 +1,12 @@
 //! Manages the LED Arduino serial connection
 
-use std::collections::HashMap;
 use std::io::{Error, ErrorKind, Read, Write};
 use std::time::Duration;
 
 use serial::{SerialPort, SystemPort};
 
 use crate::color::Color;
-use crate::room_manager::{Room, RoomManager};
+use crate::room_manager::RoomManager;
 
 // Magic numbers for color or room relay commands
 const COLOR_CMD: u8 = 0xC0;
