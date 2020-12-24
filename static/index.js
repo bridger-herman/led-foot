@@ -17,7 +17,8 @@ function loadSequence(name) {
     let data = {'name': name};
     $.post({
         url: '/api/set-sequence',
-        data: JSON.stringify(data, null, '\t'),
+        data: JSON.stringify(data),
+        contentType: 'application/json; charset=utf-8',
     }).catch((err) => console.log(`Error setting sequence:\n${err}`));
 }
 
@@ -134,8 +135,7 @@ function setup() {
     $.get({
         url: '/api/get-sequences',
     }).then((allSequences) => {
-        for (let sequence in allSequences) {
-            let s = allSequences[sequence];
+        for (let s of allSequences) {
             $('#favorite-list').append(
                 $('<li>').append(
                     $('<div>', {
@@ -145,7 +145,7 @@ function setup() {
                         },
                     }).on('click', (evt) => {
                         let text =
-                            $(event.target)
+                            $(evt.target)
                             .parent('.favorite-thumb')
                             .data('sequencePath');
                         loadSequence(text);

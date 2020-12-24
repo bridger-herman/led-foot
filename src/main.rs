@@ -10,20 +10,23 @@ pub mod room_manager;
 pub mod serial_manager;
 // pub mod subscribers;
 
+use std::thread;
+use std::time::Duration;
+use std::collections::HashMap;
+
 use actix_files::Files;
 use actix_web::{web, get, post, middleware, App, Error, HttpServer, HttpResponse, Result};
 use actix_web::error::ErrorInternalServerError;
-use actix_web::http::header;
 
 use crate::color::Color;
 // use crate::led_scheduler::LedAlarm;
 use crate::room_manager::RoomManager;
 // use crate::room_manager::RoomManager;
-use crate::led_state::{LED_SYSTEM, ROOM_MANAGER};
+use crate::led_state::{LED_SYSTEM, ROOM_MANAGER, LED_SCHEDULER, set_interrupt};
 
 
 #[get("/api/get-rgbw")]
-async fn get_rgbw() -> Result<HttpResponse> {
+async fn get_rgbw() -> Result<HttpResponse, Error> {
     if let Ok(ref sys) = LED_SYSTEM.get().read() {
         Ok(HttpResponse::Ok().json(
             serde_json::to_string(&sys.current_color()).expect("Failed to encode current color")
@@ -34,15 +37,20 @@ async fn get_rgbw() -> Result<HttpResponse> {
 }
 
 #[post("/api/set-rgbw")]
-async fn set_rgbw(payload: web::Json<Color>) -> Result<HttpResponse> {
-    if let Ok(mut sys) = LED_SYSTEM.get().write() {
-        sys.update_color(&payload);
-        sys.run_sequence();
+async fn set_rgbw(payload: web::Json<Color>) -> Result<HttpResponse, Error> {
+    // Signal that we need to interrupt the current sequence
+    set_interrupt(true);
 
-        Ok(HttpResponse::Ok().json(sys.current_color()))
-    } else {
-        Err(ErrorInternalServerError("Unable to set RGBW data"))
-    }
+    // Then, spawn a thread to handle the actual LED code
+    std::thread::spawn(move || {
+        if let Ok(mut sys) = LED_SYSTEM.get().write() {
+            sys.update_color(&payload);
+            sys.run_sequence();
+        } else {
+            error!("Unable to acquire lock on LED system");
+        };
+    });
+    Ok(HttpResponse::Ok().json("{}"))
 }
 
 #[get("/api/get-rooms")]
@@ -57,13 +65,56 @@ async fn get_rooms() -> Result<HttpResponse, Error> {
 }
 
 #[post("/api/set-rooms")]
-async fn set_rooms(payload: web::Json<RoomManager>) -> Result<HttpResponse> {
+async fn set_rooms(payload: web::Json<RoomManager>) -> Result<HttpResponse, Error> {
     if let Ok(mut mgr) = ROOM_MANAGER.get().write() {
         mgr.set_active_rooms(&payload);
         Ok(HttpResponse::Ok().json(mgr.active_rooms()))
     } else {
         Err(ErrorInternalServerError("Unable to set room data"))
     }
+}
+
+#[get("/api/get-sequences")]
+async fn get_sequences() -> Result<HttpResponse, Error> {
+    let dir_listing =
+        ::std::fs::read_dir("./led-foot-sequences")?;
+    let sequences: Vec<String> = dir_listing
+        .map(|entry| {
+            entry.unwrap().path().to_str().unwrap().to_string()
+        })
+        .filter(|path_string| path_string.ends_with(".png"))
+        .collect();
+
+    Ok(HttpResponse::Ok()
+        .content_type("application/json; charset=utf-8")
+        .body(serde_json::to_string(&sequences).expect("Failed to encode sequence list"))
+    )
+}
+
+#[post("/api/set-sequence")]
+async fn set_sequence(payload: web::Json<HashMap<String, String>>) -> Result<HttpResponse, Error> {
+    let sequence_name = payload["name"].clone();
+    debug!("Setting sequence {}", sequence_name);
+    // Signal that we need to interrupt the current sequence
+    set_interrupt(true);
+
+    // Then, spawn a thread to handle the actual LED code
+    std::thread::spawn(move || {
+        if let Ok(mut sys) = LED_SYSTEM.get().write() {
+            sys.update_sequence(&sequence_name);
+            sys.run_sequence();
+        } else {
+            error!("Unable to acquire lock on LED system");
+        };
+    });
+    Ok(HttpResponse::Ok().json(format!("{{\"name\": {}}}", payload["name"])))
+}
+
+#[get("/")]
+async fn index() -> HttpResponse {
+    HttpResponse::Ok()
+        .content_type("text/html; charset=utf-8")
+        .body(include_str!("../index.html"))
 }
 
 #[actix_web::main]
@@ -85,28 +136,34 @@ async fn main() -> std::io::Result<()> {
     // Initialize state
     led_state::init();
 
-    HttpServer::new(|| {
+    let server = HttpServer::new(|| {
         App::new()
             // Enable the logger.
             .wrap(middleware::Logger::default())
             // Serve sequences as static files (allow to see file list if user wants)
             .service(Files::new("/led-foot-sequences", "led-foot-sequences").show_files_listing())
             // Serve the rest of the static files
-            .service(Files::new("/static", "static").index_file("index.html"))
-            // Redirect to index
-            .service(web::resource("/").route(web::get().to(|| {
-                HttpResponse::Found()
-                    .header(header::LOCATION, "static/index.html")
-                    .finish()
-            })))
+            .service(Files::new("/static", "static"))
+            // index.html
+            .service(index)
+            
 
             // The rest of the services for controlling the LEDs
             .service(get_rgbw)
             .service(set_rgbw)
             .service(get_rooms)
             .service(set_rooms)
+            .service(get_sequences)
+            .service(set_sequence)
     })
-    .bind("127.0.0.1:8080")?
-    .run()
-    .await
+    .bind("127.0.0.1:8080")?;
+
+    thread::spawn(move || loop {
+        if let Ok(mut sched) = LED_SCHEDULER.get().write() {
+            sched.one_frame();
+        }
+        thread::sleep(Duration::from_secs(1));
+    });
+
+    server.run().await
 }

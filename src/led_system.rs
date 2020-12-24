@@ -4,7 +4,7 @@ use std::time::{Duration, Instant};
 
 use crate::color::Color;
 use crate::led_sequence::{LedSequence, RESOLUTION};
-use crate::led_state::SERIAL_MANAGER;
+use crate::led_state::{SERIAL_MANAGER, is_interrupted, set_interrupt};
 
 /// Controls the RGBW LEDs
 pub struct LedSystem {
@@ -13,9 +13,6 @@ pub struct LedSystem {
 
     /// Current sequence the LEDs are running, if any
     current_sequence: Option<LedSequence>,
-
-    /// Has the current color been changed from the UI?
-    changed_from_ui: bool,
 
     /// Is the LED system currently running a sequence or transition?
     active: bool,
@@ -28,11 +25,17 @@ impl LedSystem {
     pub fn current_sequence(&self) -> &Option<LedSequence> {
         &self.current_sequence
     }
+    pub fn active(&self) -> bool {
+        self.active
+    }
     pub fn set_current_color(&mut self, color: &Color) {
         self.current_color = color.clone();
     }
     pub fn set_current_sequence(&mut self, sequence: Option<LedSequence>) {
         self.current_sequence = sequence;
+    }
+    pub fn set_active(&mut self, active: bool) {
+        self.active = active;
     }
 
     /// Updates the current color
@@ -55,6 +58,9 @@ impl LedSystem {
 
     /// Runs through the current LED sequence
     pub fn run_sequence(&mut self) {
+        // Force there to not be any interrupt at the beginning
+        set_interrupt(false);
+
         self.active = true;
         if let Some(ref mut seq) = self.current_sequence {
             let start = Instant::now();
@@ -66,8 +72,11 @@ impl LedSystem {
                 let delay = Duration::from_millis((1000.0 / RESOLUTION) as u64);
                 let error = diff.checked_sub(delay).unwrap_or_default();
                 total_error += error;
-                if self.changed_from_ui {
-                    info!("interrupting");
+
+                // If the current sequence need to be interrupted because the user
+                // or a schedule wants a different one
+                if is_interrupted() {
+                    info!("Interrupting sequence");
                     break;
                 }
                 let sleep_duration =
@@ -108,7 +117,6 @@ impl Default for LedSystem {
         Self {
             current_color: Color::default(),
             current_sequence: None,
-            changed_from_ui: false,
             active: false,
         }
     }

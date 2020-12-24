@@ -5,6 +5,8 @@ use chrono::prelude::*;
 use serde_json;
 use serde_derive::{Serialize, Deserialize};
 
+use crate::led_state::{LED_SYSTEM, set_interrupt};
+
 const SCHEDULE_FILE: &str = "schedule.json";
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -81,14 +83,19 @@ impl LedScheduler {
                             "Starting on schedule: {} {}:{}",
                             day, alarm.hour, alarm.minute
                         );
-                        // {
-                        //     let mut state = led_state!();
-                        //     let active = state.active();
-                        //     state.set_changed_from_ui(active);
-                        // }
-                        // led_system!().update_sequence(&alarm.sequence);
-                        // led_system!().run_sequence();
-                        // led_state!().set_changed_from_ui(false);
+                        // Signal that we need to interrupt the current sequence
+                        set_interrupt(true);
+
+                        // Then, spawn a thread to handle the actual LED code
+                        let alarm_copy_sequence = alarm.sequence.clone();
+                        std::thread::spawn(move || {
+                            if let Ok(mut sys) = LED_SYSTEM.get().write() {
+                                sys.update_sequence(&alarm_copy_sequence);
+                                sys.run_sequence();
+                            } else {
+                                error!("Unable to acquire lock on LED system");
+                            };
+                        });
                         self.current_active = Some(alarm.clone());
                     }
                 }
@@ -130,7 +137,7 @@ impl Default for LedScheduler {
         if let Ok(schedule) = Self::try_from_schedule_file() {
             schedule
         } else {
-            debug!("No schedule was detected or schedule was corrupt");
+            warn!("No schedule was detected or schedule was corrupt, initializing blank schedule");
             Self {
                 alarms: vec![],
                 current_active: None,
