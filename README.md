@@ -5,7 +5,7 @@ Server is written in Rust, using the Actix framework.
 
 ## Cross-Compilation Setup
 
-Tested on Ubuntu Linux 18.04, with the Raspberry Pi Zero W as a target
+Tested on Arch Linux, with the Raspberry Pi Zero W as a target
 
 ### Setup
 - `sudo apt install libssl-dev` (for build on regular x86_64)
@@ -13,11 +13,19 @@ Tested on Ubuntu Linux 18.04, with the Raspberry Pi Zero W as a target
 - `rustup target add arm-unknown-linux-gnueabihf`
 
 - A version of the `arm-linux-gnueabihf-gcc` compiler
-  - This be found inside in the [Raspberry Pi Tools
+  - This can be found inside in the [Raspberry Pi Tools
   Repository](https://github.com/raspberrypi/tools)
-  - Add the compiler to PATH: `export PATH=$PATH:/<path-to-tools-repo>/arm-bcm2708/gcc-linaro-arm-linux-gnueabihf-raspbian/bin/`
-
-- Build OpenSSL (inspiration from [this StackOverflow post](https://stackoverflow.com/a/37378989))
+  - OR, with [this AUR
+    package](https://aur.archlinux.org/packages/arm-linux-gnueabihf-gcc-linaro-bin/)
+    (currently not working?)
+  - Add the compiler to PATH:
+    - `export
+      PATH=$PATH:/<path-to-tools-repo>/arm-bcm2708/gcc-linaro-arm-linux-gnueabihf-raspbian/bin/`
+    - OR, `export
+      PATH=$PATH:/<path-to-tools-repo>/arm-bcm2708/arm-rpi-4.9.3-linux-gnueabihf/bin`
+- At one point, building OpenSSL was necessary (seems to not be anymore). Build
+OpenSSL (inspiration from [this StackOverflow
+post](https://stackoverflow.com/a/37378989))
     - Download a release from [the releases page](https://github.com/openssl/openssl/releases) and extract it
     - Prepare OpenSSL:
 
@@ -37,13 +45,14 @@ Tested on Ubuntu Linux 18.04, with the Raspberry Pi Zero W as a target
         ```
 
 - If the versions of OpenSSL are mismatched, you may need to copy some
-  `libssl.so` files into `/usr/lib/arm-linux-gnueabihf` to make it work
+  `libssl.so` files into `/usr/lib/arm-linux-gnueabihf` on the Pi to make it work
 
-- Additionally, you may need to copy libraries like `libgcc_s` and `libgcc`
-  into the cargo lib directory
-  `$HOME/.rustup/toolchains/stable-x86_64-unknown-linux-gnu/lib/rustlib/arm-unknown-linux-gnueabihf/lib`.
-  These can be found inside the crosstool-ng install, or in the [Raspberry Pi
-  Tools Repository](https://github.com/raspberrypi/tools)
+- Additionally, you may need to copy libraries like `libgcc_s` and `libgcc` into
+the cargo lib directory
+`$HOME/.rustup/toolchains/stable-x86_64-unknown-linux-gnu/lib/rustlib/arm-unknown-linux-gnueabihf/lib`.
+These can be found inside a [crosstool-ng](http://crosstool-ng.github.io/)
+install, or in the [Raspberry Pi Tools
+Repository](https://github.com/raspberrypi/tools)
 
 
 ## Rust configuration
@@ -61,7 +70,14 @@ linker = "arm-linux-gnueabihf-gcc"
   Raspberry Pi tools) to the PATH so it can be located by `cargo`:
 
 ```
+# Crosstool NG
 export PATH=${PATH}:$HOME/x-tools/armv6-rpi-linux-gnueabihf/bin
+
+# RPi Tools
+export PATH=$PATH:/<path-to-tools-repo>/arm-bcm2708/gcc-linaro-arm-linux-gnueabihf-raspbian/bin/
+
+# RPi Tools (most current)
+export PATH=$PATH:/<path-to-tools-repo>/arm-bcm2708/arm-rpi-4.9.3-linux-gnueabihf/bin`
 ```
 
 - Use the provided `deploy-to-pi.sh` to compile the project binaries for the

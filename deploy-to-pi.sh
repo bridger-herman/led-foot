@@ -5,8 +5,8 @@
 # Inspiration from: https://stackoverflow.com/a/37378989
 
 # Locate OpenSSL lib (must build OpenSSL first)
-export OPENSSL_LIB_DIR=$HOME/GitHub/openssl-OpenSSL_1_1_1e
-export OPENSSL_INCLUDE_DIR=$HOME/GitHub/openssl-OpenSSL_1_1_1e/include
+export OPENSSL_LIB_DIR=$HOME/packages/openssl-OpenSSL_1_1_1h
+export OPENSSL_INCLUDE_DIR=$HOME/packages/openssl-OpenSSL_1_1_1h/include
 
 # Tell Rust where arm-linux-gnueabihf-gcc is
 export PATH=$PATH:$HOME/GitHub/tools/arm-bcm2708/gcc-linaro-arm-linux-gnueabihf-raspbian/bin
@@ -20,7 +20,7 @@ cargo build --target arm-unknown-linux-gnueabihf --release
 # Tar up the necessary files...
 mkdir -p /tmp/led-foot
 
-cp -r led-foot-sequences templates static target/arm-unknown-linux-gnueabihf/release/led-foot /tmp/led-foot
+cp -r led-foot-sequences index.html static target/arm-unknown-linux-gnueabihf/release/led-foot /tmp/led-foot
 
 cd /tmp
 tar -czvf /tmp/led-foot.tar.gz ./led-foot
