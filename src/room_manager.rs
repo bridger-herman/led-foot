@@ -11,7 +11,7 @@ pub enum Room {
 }
 
 /// Control which rooms are currently active
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct RoomManager {
     pub living_room: bool,
     pub office: bool,
@@ -36,9 +36,7 @@ impl RoomManager {
     }
 
     pub fn set_active_rooms(&mut self, active_rooms: &Self) {
-        self.living_room = active_rooms.living_room;
-        self.office = active_rooms.office;
-        self.bedroom = active_rooms.bedroom;
+        *self = active_rooms.clone();
         if let Ok(mut man) = SERIAL_MANAGER.get().write() {
             man.send_rooms(&self);
         }

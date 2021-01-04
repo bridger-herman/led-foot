@@ -5,22 +5,27 @@ use chrono::prelude::*;
 use serde_derive::{Deserialize, Serialize};
 use serde_json;
 
-use crate::led_state::{set_interrupt, LED_SYSTEM};
+use crate::led_state::{set_interrupt, LED_SYSTEM, ROOM_MANAGER};
+use crate::room_manager::RoomManager;
 
 const SCHEDULE_FILE: &str = "schedule.json";
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct LedAlarm {
     days: Vec<String>,
     hour: String,
     minute: String,
-    sequence: String,
+    sequence: Option<String>,
+    rooms: Option<RoomManager>,
 }
 
 #[derive(Debug, Deserialize)]
 pub struct LedScheduler {
     pub alarms: Vec<LedAlarm>,
-    current_active: Option<LedAlarm>,
+
+    /// Is any alarm currently active this minute?
+    /// Used to avoid double-starting any scheduled alarms.
+    current_minute_active: Option<LedAlarm>,
 }
 
 impl LedScheduler {
@@ -56,14 +61,15 @@ impl LedScheduler {
         let now_hour = &format!("{:02?}", now.hour());
         let now_minute = &format!("{:02?}", now.minute());
 
-        let reset_active =
-            if let Some(LedAlarm { ref minute, .. }) = self.current_active {
-                minute != now_minute
-            } else {
-                false
-            };
+        let reset_active = if let Some(LedAlarm { ref minute, .. }) =
+            self.current_minute_active
+        {
+            minute != now_minute
+        } else {
+            false
+        };
 
-        if self.current_active.is_none() {
+        if self.current_minute_active.is_none() {
             for alarm in &self.alarms {
                 for day in &alarm.days {
                     trace!(
@@ -86,26 +92,38 @@ impl LedScheduler {
                         // Signal that we need to interrupt the current sequence
                         set_interrupt(true);
 
+                        // See if we need to turn on/off any rooms...
+                        if let Some(ref rooms) = alarm.rooms {
+                            if let Ok(mut man) = ROOM_MANAGER.get().write() {
+                                man.set_active_rooms(rooms);
+                            }
+                        }
+
                         // Then, spawn a thread to handle the actual LED code
-                        let alarm_copy_sequence = alarm.sequence.clone();
-                        std::thread::spawn(move || {
-                            if let Ok(mut sys) = LED_SYSTEM.get().write() {
-                                sys.update_sequence(&alarm_copy_sequence);
-                                sys.run_sequence();
-                            } else {
-                                error!("Unable to acquire lock on LED system");
-                            };
-                        });
-                        self.current_active = Some(alarm.clone());
+                        if let Some(ref seq) = alarm.sequence {
+                            let alarm_copy_sequence = seq.clone();
+                            std::thread::spawn(move || {
+                                if let Ok(mut sys) = LED_SYSTEM.get().write() {
+                                    sys.update_sequence(&alarm_copy_sequence);
+                                    sys.run_sequence();
+                                } else {
+                                    error!(
+                                        "Unable to acquire lock on LED system"
+                                    );
+                                };
+                            });
+                        }
+
+                        self.current_minute_active = Some(alarm.clone());
                     }
                 }
             }
         } else {
-            debug!("Not starting (Alarm currently active)")
+            trace!("Not starting (Alarm currently active)")
         }
 
         if reset_active {
-            self.current_active = None;
+            self.current_minute_active = None;
             debug!("Reset active to None");
         }
     }
@@ -119,15 +137,12 @@ impl LedScheduler {
             .expect("Unable to parse JSON schedule file");
 
         for alarm in &alarms {
-            debug!(
-                "Setting alarm: {:?} {} {}",
-                alarm.days, alarm.hour, alarm.minute
-            );
+            debug!("Setting alarm: {:#?}", alarm);
         }
 
         Ok(Self {
             alarms,
-            current_active: None,
+            current_minute_active: None,
         })
     }
 }
@@ -140,7 +155,7 @@ impl Default for LedScheduler {
             warn!("No schedule was detected or schedule was corrupt, initializing blank schedule");
             Self {
                 alarms: vec![],
-                current_active: None,
+                current_minute_active: None,
             }
         }
     }

@@ -69,10 +69,8 @@ impl SerialManager {
             // Send the default color to be black
             // let write_bytes: [u8; UPDATE_BYTES] =
             //     <[u8; UPDATE_BYTES]>::from(&led_system!().current_color);
-            let write_bytes: [u8; UPDATE_BYTES] = [
-                COLOR_CMD,
-                0, 0, 0, 0, 0, 0, 0, 0
-            ];
+            let write_bytes: [u8; UPDATE_BYTES] =
+                [COLOR_CMD, 0, 0, 0, 0, 0, 0, 0, 0];
             ser.write_all(&write_bytes)?;
 
             // Receive confirmation bytes "C\r\n"
@@ -154,7 +152,7 @@ impl SerialManager {
                 );
             }
         } else {
-            println!("Room state update: {:?}", state);
+            println!("Serial Mockup: {:?}", state);
         }
     }
 }
