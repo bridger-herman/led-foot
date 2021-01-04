@@ -1,0 +1,18 @@
+# Systemd service for LEDs
+# Copy this file into /etc/systemd/system
+#
+# As root, run `systemctl enable led-foot.service`
+[Unit]
+Description=LED Lighting Control
+After=network.target
+
+[Service]
+Type=simple
+User=pi
+WorkingDirectory=/home/pi/led-foot
+ExecStart=/home/pi/led-foot/led-foot
+Restart=on-failure
+# Other restart options: always, on-abort, etc
+
+[Install]
+WantedBy=default.target

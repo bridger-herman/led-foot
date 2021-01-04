@@ -20,7 +20,7 @@ cargo build --target arm-unknown-linux-gnueabihf --release
 # Tar up the necessary files...
 mkdir -p /tmp/led-foot
 
-cp -r led-foot-sequences index.html static target/arm-unknown-linux-gnueabihf/release/led-foot /tmp/led-foot
+cp -r led-foot-sequences index.html static systemd target/arm-unknown-linux-gnueabihf/release/led-foot /tmp/led-foot
 
 cd /tmp
 tar -czvf /tmp/led-foot.tar.gz ./led-foot
