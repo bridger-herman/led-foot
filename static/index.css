@@ -103,3 +103,14 @@ input.time {
     height: 8em;
     width: 8em;
 }
+
+#wemos {
+    display: flex;
+    justify-content: center;
+}
+#wemos button {
+    display: flex;
+    align-items: center;
+    padding: 0 10px;
+    font-family: sans-serif;
+}

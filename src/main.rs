@@ -8,6 +8,7 @@ pub mod led_state;
 pub mod led_system;
 pub mod room_manager;
 pub mod serial_manager;
+pub mod wemo_manager;
 // pub mod subscribers;
 
 use std::collections::HashMap;
@@ -23,9 +24,19 @@ use actix_web::{
 use crate::color::Color;
 use crate::led_scheduler::LedAlarm;
 use crate::led_state::{
-    set_interrupt, LED_SCHEDULER, LED_SYSTEM, ROOM_MANAGER,
+    set_interrupt, LED_SCHEDULER, LED_SYSTEM, ROOM_MANAGER, WEMO_MANAGER,
 };
 use crate::room_manager::RoomManager;
+
+#[post("/api/wemo")]
+async fn wemo(
+    payload: web::Json<HashMap<String, String>>,
+) -> Result<HttpResponse, Error> {
+    for (wemo, cmd) in payload.iter() {
+        WEMO_MANAGER.get().send_wemo_command(wemo, cmd);
+    }
+    Ok(HttpResponse::Ok().json("{}"))
+}
 
 #[get("/api/get-rgbw")]
 async fn get_rgbw() -> Result<HttpResponse, Error> {
@@ -193,6 +204,7 @@ async fn main() -> std::io::Result<()> {
             .service(set_sequence)
             .service(get_schedule)
             .service(set_schedule)
+            .service(wemo)
     })
     .bind("0.0.0.0:5000")?;
 

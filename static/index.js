@@ -90,6 +90,19 @@ function setup() {
     //     updateSlidersFromJson(JSON.parse(evt.data));
     // };
 
+    // Set up WeMo commands
+    $('.wemo-button').on('click', (evt) => {
+        let wemo = evt.target.id;
+        let command = 'toggle';
+        let data = {};
+        data[wemo] = command;
+        $.post({
+            data: JSON.stringify(data),
+            url: '/api/wemo',
+            contentType: 'application/json; charset=utf-8',
+        })
+    })
+
     // Setup ajax POST requests to update RGBW leds
     $('.input-range-container input').on('change', function() {
         let data = {
