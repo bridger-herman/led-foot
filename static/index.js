@@ -29,6 +29,8 @@ function parseTime(timeStr) {
 }
 
 function updateSchedule() {
+    console.log('updating schedule');
+    return;
     let schedule = [];
     let scheduleElements = $('.schedule-element');
     scheduleElements.each((_index, element) => {
@@ -49,14 +51,62 @@ function updateSchedule() {
     }).catch((err) => console.log(`Error setting schedule:\n${err}`));
 }
 
+function makeScheduleEditor(data, $scheduleElement) {
+    let $sed = $('#schedule-editor-content');
+    $sed.empty();
+
+    // This only works on FF, Chrome, and Edge.
+    let $timeInput = $('<input>', {
+        type: 'time',
+        val: `${data.hour}:${data.minute}`,
+    });
+    $sed.append($timeInput);
+
+    let $daysInput = $('<div>');
+    const DAYS_OF_WEEK = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    for (const day of DAYS_OF_WEEK) {
+        $daysInput.append(
+            $('<span>', {
+                class: 'day-of-week-input'
+            }).append(
+                $('<input>', {
+                    id: `checkbox-${day}`,
+                    type: 'checkbox',
+                    prop: {checked: data.days.indexOf(day) >= 0},
+                })
+            ).append(
+                $('<label>', {
+                    for: `checkbox-${day}`,
+                    text: day,
+                })
+            )
+        )
+    }
+    $sed.append($daysInput);
+}
+
 function makeScheduleElement(data) {
-    console.log(data);
     let $el = $('<div>', {
         class: 'schedule-element'
     }).append(
-        $('<p>', {text: `${data.hour.padStart(2)}:${data.minute.padStart(2)}`})
+        $('<button>', {
+            class: 'material-icons',
+                text: 'create' 
+        }).on('click', (evt) => {
+            let $sched = $(evt.target).parents('.schedule-element');
+            $('#schedule-editor').dialog('open');
+            makeScheduleEditor(data, $sched);
+        })
     ).append(
-        $('<p>', {text: data.days})
+        $('<p>', {
+            class: 'time',
+            text: `${data.hour.padStart(2)}:${data.minute.padStart(2)}`,
+        })
+    ).append(
+        $('<p>', {
+            class: 'days',
+            text: data.days
+        })
     );
 
     if (data.rooms) {
@@ -171,6 +221,31 @@ function setup() {
     //     updateSlidersFromJson(JSON.parse(evt.data));
     // };
 
+    let $schedEditor = $('<div>', {
+        id: 'schedule-editor',
+        title: 'Schedule Editor',
+    }).dialog({
+        height: $('body').height() * 0.9,
+        width: $('body').width() * 0.9,
+        draggable: false,
+        resizable: false,
+        autoOpen: false,
+        buttons: [
+            {
+                text: 'Cancel',
+                click: function() {
+                    $(this).dialog('close');
+                }
+            },
+            {
+                text: 'Save',
+                click: function() {
+                    $(this).dialog('close');
+                }
+            },
+        ]
+    }).append($('<div>', {id: 'schedule-editor-content'}));
+
     setupNav();
     $('#favorites-button').trigger('click');
 
@@ -255,17 +330,6 @@ function setup() {
             $('#schedule')
                 .append(makeScheduleElement(scheduleEntry))
         }
-
-        // Once all the schedules are done loading, populate the time pickers
-        $('.time-picker').clockTimePicker({
-            popupWidthOnDesktop: $(document).width(),
-            fonts: {
-                fontFamily: 'Arial',
-                clockOuterCircleFontSize: 50,
-                clockInnerCircleFontSize: 45,
-                buttonFontSize: 55,
-            },
-        });
     });
 }
 

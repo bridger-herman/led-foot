@@ -84,19 +84,24 @@ ul.no-indent {
   width: 100%;
 }
 
-/* Clock styling */
-.clock-timepicker {
-  width: 100%;
+#schedule-editor-content {
+  font-size: 30px;
 }
-input.time {
-  min-width: 0 !important;
-  border: 2px solid gray;
-  border-radius: 4px;
-  width: 5em;
-  text-align: center;
+#schedule-editor-content div.time-input {
+  display: inline-block;
+}
+#schedule-editor-content input[type="time"] {
+  font-size: 70px;
+}
+#schedule-editor-content span.day-of-week-input {
+  display: inline-block;
+}
+#schedule-editor-content span.day-of-week-input>* {
   display: block;
-  margin: 0.25rem auto;
-  font-size: inherit;
+}
+#schedule-editor-content input[type="checkbox"] {
+  width: 3em;
+  height: 3em;
 }
 
 #rooms {
