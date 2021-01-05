@@ -1,3 +1,5 @@
+const DAYS_OF_WEEK = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+
 // Relies on the
 //
 // ```
@@ -29,18 +31,36 @@ function parseTime(timeStr) {
 }
 
 function updateSchedule() {
-    console.log('updating schedule');
-    return;
     let schedule = [];
     let scheduleElements = $('.schedule-element');
     scheduleElements.each((_index, element) => {
-        let time = parseTime($(element).find('.time').val());
-        let days = $(element).find('.days-input').val();
+        let time = parseTime($(element).find('.time').text());
+
+        let days = $(element).find('.days').text();
+
+        let $rooms = $(element).find('.room-icon');
+        let rooms = {};
+        $rooms.each((_i, el) => {
+            let roomName = $(el).data('room');
+            let status = $(el).data('status');
+            rooms[roomName] = status;
+        });
+
+        let $wemos = $(element).find('.wemo-icon');
+        let wemos = {};
+        $wemos.each((_i, el) => {
+            let wemoName = $(el).data('wemo');
+            let cmd = $(el).data('command');
+            wemos[wemoName] = cmd;
+        });
+
         schedule.push({
             days: days.split(','),
             hour: time.hour,
             minute: time.minute,
             sequence: $(element).find('img').attr('src'),
+            rooms,
+            wemos,
         });
     });
 
@@ -54,6 +74,7 @@ function updateSchedule() {
 function makeScheduleEditor(data, $scheduleElement) {
     let $sed = $('#schedule-editor-content');
     $sed.empty();
+    $sed.data('scheduleElement', $scheduleElement);
 
     // This only works on FF, Chrome, and Edge.
     let $timeInput = $('<input>', {
@@ -63,7 +84,6 @@ function makeScheduleEditor(data, $scheduleElement) {
     $sed.append($timeInput);
 
     let $daysInput = $('<div>');
-    const DAYS_OF_WEEK = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
     for (const day of DAYS_OF_WEEK) {
         $daysInput.append(
             $('<span>', {
@@ -111,7 +131,7 @@ function makeScheduleElement(data) {
 
     if (data.rooms) {
         const ROOM_ICON_MAP = {
-            'bedroom': 'king_bed',
+            'bedroom': 'night_shelter',
             'office': 'keyboard',
             'living_room': 'weekend',
         };
@@ -119,12 +139,15 @@ function makeScheduleElement(data) {
         for (let room in data.rooms) {
             let on = data.rooms[room];
             $roomIcons.append($('<span>', {
-                class: 'material-icons',
+                class: 'room-icon material-icons',
                 text: ROOM_ICON_MAP[room],
                 css: {
                     color: on ? '#eee' : '#444',
                 },
-            }))
+            }).data({
+                room,
+                status: on,
+            }));
         }
         $el.append($roomIcons);
     }
@@ -139,11 +162,19 @@ function makeScheduleElement(data) {
             $wemoIcons.append(
                 $('<span>').append(
                     $('<span>', {
-                        class: 'material-icons',
+                        class: 'wemo-icon material-icons',
                         text: WEMO_ICON_MAP[wemo],
+                    }).data({
+                        wemo,
+                        command: data.wemos[wemo],
                     })
-                ).append($('<span>', {text: `: ${data.wemos[wemo]}`}))
-            )
+                ).append(
+                    $('<span>', {
+                        class: 'wemo-command',
+                        text: `: ${data.wemos[wemo]}`,
+                    })
+                )
+            );
         }
         $el.append($wemoIcons);
     }
@@ -221,6 +252,10 @@ function setup() {
     //     updateSlidersFromJson(JSON.parse(evt.data));
     // };
 
+    $('body').append($('<button>', {
+        text: 'clickme'
+    }).on('click', () => updateSchedule()));
+
     let $schedEditor = $('<div>', {
         id: 'schedule-editor',
         title: 'Schedule Editor',
@@ -240,6 +275,20 @@ function setup() {
             {
                 text: 'Save',
                 click: function() {
+                    let $origSchedEl = $(this).children('#schedule-editor-content').data('scheduleElement');
+
+                    let time = $(this).find('input[type="time"]').val();
+                    $origSchedEl.find('.time').text(time);
+
+                    let days = [];
+                    for (const day of DAYS_OF_WEEK) {
+                        if ($(this).find(`input[type="checkbox"]#checkbox-${day}`).prop('checked')) {
+                            days.push(day);
+                        }
+                    }
+                    $origSchedEl.find('.days').text(days);
+
+                    updateSchedule();
                     $(this).dialog('close');
                 }
             },
