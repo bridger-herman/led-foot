@@ -1,4 +1,13 @@
 const DAYS_OF_WEEK = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+const ROOM_ICON_MAP = {
+    'bedroom': 'night_shelter',
+    'office': 'keyboard',
+    'living_room': 'weekend',
+};
+const WEMO_ICON_MAP = {
+    'Insight': 'wb_incandescent',
+    'Mini': 'radio',
+};
 
 // Relies on the
 //
@@ -30,10 +39,15 @@ function parseTime(timeStr) {
     };
 }
 
-function updateSchedule() {
+function updateSchedule(currentlyEdited, $origSchedEl) {
     let schedule = [];
     let scheduleElements = $('.schedule-element');
     scheduleElements.each((_index, element) => {
+        // Skip the one that we've modified and add the modified values instead
+        if ($(element).is($origSchedEl)) {
+            schedule.push(currentlyEdited);
+            return;
+        }
         let time = parseTime($(element).find('.time').text());
 
         let days = $(element).find('.days').text();
@@ -68,7 +82,7 @@ function updateSchedule() {
         url: '/api/set-schedule',
         data: JSON.stringify(schedule),
         contentType: 'application/json; charset=utf-8',
-    }).catch((err) => console.log(`Error setting schedule:\n${err}`));
+    }).catch((err) => console.error(err));
 }
 
 function makeScheduleEditor(data, $scheduleElement) {
@@ -81,9 +95,13 @@ function makeScheduleEditor(data, $scheduleElement) {
         type: 'time',
         val: `${data.hour}:${data.minute}`,
     });
-    $sed.append($timeInput);
+    $sed.append($('<div>', {
+        class: 'schedule-input-row',
+    }).append($timeInput));
 
-    let $daysInput = $('<div>');
+    let $daysInput = $('<div>', {
+        class: 'schedule-input-row',
+    });
     for (const day of DAYS_OF_WEEK) {
         $daysInput.append(
             $('<span>', {
@@ -103,6 +121,30 @@ function makeScheduleEditor(data, $scheduleElement) {
         )
     }
     $sed.append($daysInput);
+
+    let $roomsInput = $('<div>', {
+        class: 'schedule-input-row',
+    });
+    for (let room in ROOM_ICON_MAP) {
+        $roomsInput.append(
+            $('<span>', {
+                class: 'room-input'
+            }).append(
+                $('<input>', {
+                    type: 'checkbox',
+                    id: `room-checkbox-${room}`,
+                    prop: {checked: data.rooms[room]}
+                })
+            ).append(
+                $('<label>', {
+                    class: 'material-icons',
+                    for: `room-checkbox-${room}`,
+                    text: ROOM_ICON_MAP[room],
+                })
+            )
+        )
+    }
+    $sed.append($roomsInput);
 }
 
 function makeScheduleElement(data) {
@@ -130,11 +172,6 @@ function makeScheduleElement(data) {
     );
 
     if (data.rooms) {
-        const ROOM_ICON_MAP = {
-            'bedroom': 'night_shelter',
-            'office': 'keyboard',
-            'living_room': 'weekend',
-        };
         let $roomIcons = $('<p>');
         for (let room in data.rooms) {
             let on = data.rooms[room];
@@ -153,10 +190,6 @@ function makeScheduleElement(data) {
     }
 
     if (data.wemos) {
-        const WEMO_ICON_MAP = {
-            'Insight': 'wb_incandescent',
-            'Mini': 'radio',
-        };
         let $wemoIcons = $('<p>');
         for (let wemo in data.wemos) {
             $wemoIcons.append(
@@ -184,21 +217,6 @@ function makeScheduleElement(data) {
     }
 
     return $el;
-    //     $('<input>', {
-    //         type: 'text',
-    //         class: 'time time-picker',
-    //         value: `${data.hour}:${data.minute}`,
-    //     }).on('change', updateSchedule)
-    // ).append(
-    //     $('<input>', {
-    //         value: data.days,
-    //         class: 'days-input',
-    //     }).on('change', updateSchedule)
-    // ).append(
-    //     $('<label>', {text: 'Days'})
-    // ).append(
-    //     $('<img>', {src: data.sequence})
-    // );
 }
 
 function updateSlidersFromJson(data) {
@@ -241,6 +259,20 @@ function getLatestState() {
     });
 }
 
+function getLatestSchedule() {
+    $('#schedule').empty();
+
+    // Populate the schedules
+    $.get({
+        url: '/api/get-schedule',
+    }).then((response) => {
+        for (const scheduleEntry of response) {
+            $('#schedule')
+                .append(makeScheduleElement(scheduleEntry))
+        }
+    });
+}
+
 function setup() {
     // Start a WebSocket for updating the sliders in realtime
     // let fullHref = window.location.href;
@@ -278,7 +310,8 @@ function setup() {
                     let $origSchedEl = $(this).children('#schedule-editor-content').data('scheduleElement');
 
                     let time = $(this).find('input[type="time"]').val();
-                    $origSchedEl.find('.time').text(time);
+                    let parsedTime = parseTime(time);
+                    // $origSchedEl.find('.time').text(time);
 
                     let days = [];
                     for (const day of DAYS_OF_WEEK) {
@@ -286,9 +319,24 @@ function setup() {
                             days.push(day);
                         }
                     }
-                    $origSchedEl.find('.days').text(days);
+                    // $origSchedEl.find('.days').text(days);
 
-                    updateSchedule();
+                    let rooms = {};
+                    for (const room in ROOM_ICON_MAP) {
+                        let checked = $(this).find(`input[type="checkbox"]#room-checkbox-${room}`).prop('checked');
+                        rooms[room] = checked;
+                    }
+                    // $origSchedEl.find('.rooms').data(days);
+
+                    updateSchedule({
+                        hour: parsedTime.hour,
+                        minute: parsedTime.minute,
+                        days,
+                        sequence: null,
+                        rooms,
+                        wemos: null,
+                    }, $origSchedEl);
+                    getLatestSchedule();
                     $(this).dialog('close');
                 }
             },
@@ -371,15 +419,7 @@ function setup() {
         }
     });
 
-    // Populate the schedules
-    $.get({
-        url: '/api/get-schedule',
-    }).then((response) => {
-        for (const scheduleEntry of response) {
-            $('#schedule')
-                .append(makeScheduleElement(scheduleEntry))
-        }
-    });
+    getLatestSchedule();
 }
 
 window.onload = setup;

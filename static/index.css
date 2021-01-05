@@ -93,7 +93,8 @@ ul.no-indent {
 #schedule-editor-content input[type="time"] {
   font-size: 70px;
 }
-#schedule-editor-content span.day-of-week-input {
+#schedule-editor-content span.day-of-week-input,
+#schedule-editor-content span.room-input {
   display: inline-block;
 }
 #schedule-editor-content span.day-of-week-input>* {
@@ -102,6 +103,9 @@ ul.no-indent {
 #schedule-editor-content input[type="checkbox"] {
   width: 3em;
   height: 3em;
+}
+#schedule-editor-content .schedule-input-row {
+  margin: 2rem 0;
 }
 
 #rooms {
