@@ -41,10 +41,7 @@ async fn wemo(
 #[get("/api/get-rgbw")]
 async fn get_rgbw() -> Result<HttpResponse, Error> {
     if let Ok(ref sys) = LED_SYSTEM.get().read() {
-        Ok(HttpResponse::Ok().json(
-            serde_json::to_string(&sys.current_color())
-                .expect("Failed to encode current color"),
-        ))
+        Ok(HttpResponse::Ok().json(&sys.current_color()))
     } else {
         Err(ErrorInternalServerError("Unable to get RGBW data"))
     }
@@ -70,10 +67,7 @@ async fn set_rgbw(payload: web::Json<Color>) -> Result<HttpResponse, Error> {
 #[get("/api/get-rooms")]
 async fn get_rooms() -> Result<HttpResponse, Error> {
     if let Ok(ref mgr) = ROOM_MANAGER.get().read() {
-        Ok(HttpResponse::Ok().json(
-            serde_json::to_string(mgr.active_rooms())
-                .expect("Failed to encode room list"),
-        ))
+        Ok(HttpResponse::Ok().json(mgr.active_rooms()))
     } else {
         Err(ErrorInternalServerError("Unable to get room data"))
     }

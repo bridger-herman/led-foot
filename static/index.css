@@ -1,7 +1,12 @@
 body {
-  background: #161515;
+  background: #282525;
   color: #eee;
   font-size: 30px;
+  margin: 0;
+  width: 100vw;
+}
+.material-icons {
+  font-size: 50px !important;
 }
 
 @media only screen and (max-width: 1000px) {
@@ -41,8 +46,8 @@ body {
 
 .favorite-thumb {
   position: relative;
-  width: 10em;
-  height: 5em;
+  width: 12em;
+  height: 6em;
   border: 2px solid gray;
   border-radius: 4px;
   margin: 0.25rem;
@@ -105,12 +110,44 @@ input.time {
 }
 
 #wemos {
+    width: 100%;
+    margin: 1rem;
     display: flex;
-    justify-content: center;
+    justify-content: center
 }
 #wemos button {
     display: flex;
     align-items: center;
-    padding: 0 10px;
+    padding: 1rem;
+    margin: 2rem;
     font-family: sans-serif;
+}
+
+header {
+  width: 100%;
+  top: 0;
+  left: 0;
+  background: #323030;
+  margin: 0;
+}
+
+footer {
+  width: 100%;
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  background: #323030;
+}
+footer nav {
+  display: flex;
+  padding: 1rem 0 0 0;
+}
+footer nav button {
+  flex-grow: 1;
+  margin: 0.5rem;
+  border: none;
+  padding: 0.5rem;
+}
+footer nav button.active {
+  background-color: #ddeeff;
 }

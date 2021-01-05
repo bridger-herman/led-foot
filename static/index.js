@@ -1,16 +1,14 @@
 // Relies on the
 //
 // ```
-// <color/gradient>_<name>_<duration?>_<repeat?>.png
+// ./led-foot-sequences/<sequence_name>.png
 // ```
 //
 // convention
 function stripName(sequencePath) {
-    let firstUnderscore = sequencePath.indexOf('_');
-    let secondUnderscore = sequencePath.indexOf('_', firstUnderscore + 1);
-    let dotIndex = sequencePath.lastIndexOf('.');
-    let lastIndex = secondUnderscore >= 0 ? secondUnderscore : dotIndex;
-    return sequencePath.slice(firstUnderscore + 1, lastIndex);
+    let nameRegex = /.\/led-foot-sequences\/([a-zA-Z\-]+).png/;
+    let match = sequencePath.match(nameRegex);
+    return match[1];
 }
 
 function loadSequence(name) {
@@ -79,6 +77,21 @@ function updateSlidersFromJson(data) {
     $('#input-range-white').val(data.w);
 }
 
+function setupNav() {
+    let $buttons = $('nav>button');
+    $buttons.each((i, el) => {
+        $(el).on('click', (evt) => {
+            $('nav>button').removeClass('active');
+            $(evt.target).addClass('active');
+
+            // delete `-button` to find id of article
+            let id = evt.target.id.slice(0, evt.target.id.indexOf('-button'));
+            $('article').css('display', 'none');
+            $('#' + id).css('display', 'block');
+        })
+    });
+}
+
 function setup() {
     // Start a WebSocket for updating the sliders in realtime
     // let fullHref = window.location.href;
@@ -90,17 +103,24 @@ function setup() {
     //     updateSlidersFromJson(JSON.parse(evt.data));
     // };
 
+    setupNav();
+    $('#favorites-button').trigger('click');
+
     // Set up WeMo commands
     $('.wemo-button').on('click', (evt) => {
-        let wemo = evt.target.id;
+        let button = evt.target.closest('button');
+        let wemo = button.id;
         let command = 'toggle';
         let data = {};
         data[wemo] = command;
+        $(button).prop('disabled', true);
         $.post({
             data: JSON.stringify(data),
             url: '/api/wemo',
             contentType: 'application/json; charset=utf-8',
-        })
+        }).then(() => {
+            $(button).prop('disabled', false);
+        });
     })
 
     // Setup ajax POST requests to update RGBW leds
@@ -135,15 +155,15 @@ function setup() {
     // Populate all the current color values from the server side
     $.get({
         url: '/api/get-rgbw',
-    }).then((data) => updateSlidersFromJson(JSON.parse(data)));
+    }).then((data) => updateSlidersFromJson(data));
 
     // Populate the room data
     $.get({
         url: '/api/get-rooms',
     }).then((response) => {
-        $('#living-room-check').prop('checked', response['LivingRoom']);
-        $('#office-check').prop('checked', response['Office']);
-        $('#bedroom-check').prop('checked', response['Bedroom']);
+        $('#living-room-check').prop('checked', response['living_room']);
+        $('#office-check').prop('checked', response['office']);
+        $('#bedroom-check').prop('checked', response['bedroom']);
     });
 
     $.get({

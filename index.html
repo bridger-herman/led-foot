@@ -5,69 +5,87 @@
   <title>LED Control</title>
   <link rel="stylesheet" href="./static/index.css">
   <link rel="stylesheet" href="./static/ranges.css">
+  <link href="https://fonts.googleapis.com/icon?family=Material+Icons"
+      rel="stylesheet">
 </head>
 <body>
-  <div class="container input-range-container">
-    <form id="solid-rgbw-input"
-          name="solid-rgbw-input">
-      <input id="input-range-red"
-            max="1"
-            min="0"
-            step="0.001"
-            name="r"
-            type="range">
-      <input id="input-range-green"
-            max="1"
-            min="0"
-            step="0.001"
-            name="g"
-            type="range">
-      <input id="input-range-blue"
-            max="1"
-            min="0"
-            step="0.001"
-            name="b"
-            type="range">
-      <input id="input-range-white"
-            max="1"
-            min="0"
-            step="0.001"
-            name="w"
-            type="range">
-    </form>
-  </div>
+  <header>
+    <span id="rooms">
+        <span>
+            <input id="bedroom-check" type="checkbox">
+            <label for="bedroom-check" class="material-icons">king_bed</label>
+        </span>
 
-  <span id="rooms">
-      <span>
-          <input id="living-room-check" type="checkbox">
-          <label for="living-room-check">Living Room</label>
-      </span>
+        <span>
+            <input id="office-check" type="checkbox">
+            <label for="office-check" class="material-icons">keyboard</label>
+        </span>
 
-      <span>
-          <input id="office-check" type="checkbox">
-          <label for="office-check">Office</label>
-      </span>
+        <span>
+            <input id="living-room-check" type="checkbox">
+            <label for="living-room-check" class="material-icons">weekend</label>
+        </span>
+    </span>
+    <span id="wemos">
+      <button class="wemo-button" id="Mini"><span class="material-icons">radio</span></button>
+      <button class="wemo-button" id="Insight"><span class="material-icons">wb_incandescent</span></button>
+    </span>
+  </header>
 
-      <span>
-          <input id="bedroom-check" type="checkbox">
-          <label for="bedroom-check">Bedroom</label>
-      </span>
-  </span>
 
-  <span id="wemos">
-    <button class="wemo-button" id="Insight">Hall</button>
-    <button class="wemo-button" id="Mini">Bedroom</button>
-  </span>
+  <article id="favorites">
+    <div class="centered container favorites" id="favorite-gradients">
+      <ul class="no-indent" id='favorite-list'>
+        <!-- auto populated -->
+      </ul>
+    </div>
+  </article>
 
-  <div class="centered container favorites" id="favorite-gradients">
-    <ul class="no-indent" id='favorite-list'>
+  <article id="inputs">
+    <div class="container input-range-container">
+      <form id="solid-rgbw-input"
+            name="solid-rgbw-input">
+        <input id="input-range-red"
+              max="1"
+              min="0"
+              step="0.001"
+              name="r"
+              type="range">
+        <input id="input-range-green"
+              max="1"
+              min="0"
+              step="0.001"
+              name="g"
+              type="range">
+        <input id="input-range-blue"
+              max="1"
+              min="0"
+              step="0.001"
+              name="b"
+              type="range">
+        <input id="input-range-white"
+              max="1"
+              min="0"
+              step="0.001"
+              name="w"
+              type="range">
+      </form>
+    </div>
+  </article>
+
+  <article id="schedules">
+    <div id="schedule">
       <!-- auto populated -->
-    </ul>
-  </div>
+    </div>
+  </article>
 
-  <div id="schedule">
-    <!-- auto populated -->
-  </div>
+  <footer>
+    <nav>
+      <button class="material-icons" id="favorites-button">favorite</button>
+      <button class="material-icons" id="schedules-button">schedule</button>
+      <button class="material-icons" id="inputs-button">settings_input_component</button>
+    </nav>
+  </footer>
 
   <script src=
   "https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
