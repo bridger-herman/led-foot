@@ -1,11 +1,12 @@
 use std::fs::File;
 use std::io::prelude::*;
+use std::collections::HashMap;
 
 use chrono::prelude::*;
 use serde_derive::{Deserialize, Serialize};
 use serde_json;
 
-use crate::led_state::{set_interrupt, LED_SYSTEM, ROOM_MANAGER};
+use crate::led_state::{set_interrupt, LED_SYSTEM, ROOM_MANAGER, WEMO_MANAGER};
 use crate::room_manager::RoomManager;
 
 const SCHEDULE_FILE: &str = "schedule.json";
@@ -15,8 +16,16 @@ pub struct LedAlarm {
     days: Vec<String>,
     hour: String,
     minute: String,
+
+    /// The sequence to be used (given in png format)
     sequence: Option<String>,
+
+    /// Which rooms to enable with this alarm
     rooms: Option<RoomManager>,
+
+    /// Which wemos commands to give with this alarm; Map of (WeMo Device, Command)
+    /// Command is "on", "off", or "toggle"
+    wemos: Option<HashMap<String, String>>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -96,6 +105,13 @@ impl LedScheduler {
                         if let Some(ref rooms) = alarm.rooms {
                             if let Ok(mut man) = ROOM_MANAGER.get().write() {
                                 man.set_active_rooms(rooms);
+                            }
+                        }
+
+                        // See if we need to turn on/off any wemos...
+                        if let Some(ref wemos) = alarm.wemos {
+                            for (wemo, cmd) in wemos.iter() {
+                                WEMO_MANAGER.get().send_wemo_command(wemo, cmd);
                             }
                         }
 
