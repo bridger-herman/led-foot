@@ -22,7 +22,7 @@ cargo build --target arm-unknown-linux-gnueabihf --release
 rm -rf /tmp/led-foot /tmp/led-foot.tar.gz
 mkdir -p /tmp/led-foot
 
-cp -r led-foot-sequences index.html static systemd target/arm-unknown-linux-gnueabihf/release/led-foot /tmp/led-foot
+cp -r led-foot-sequences index.html reinitialize_serial.py static systemd target/arm-unknown-linux-gnueabihf/release/led-foot /tmp/led-foot
 
 cd /tmp
 tar -czvf /tmp/led-foot.tar.gz ./led-foot
