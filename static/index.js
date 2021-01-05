@@ -88,7 +88,25 @@ function setupNav() {
             let id = evt.target.id.slice(0, evt.target.id.indexOf('-button'));
             $('article').css('display', 'none');
             $('#' + id).css('display', 'block');
+
+            getLatestState();
         })
+    });
+}
+
+function getLatestState() {
+    // Populate all the current color values from the server side
+    $.get({
+        url: '/api/get-rgbw',
+    }).then((data) => updateSlidersFromJson(data));
+
+    // Populate the room data
+    $.get({
+        url: '/api/get-rooms',
+    }).then((response) => {
+        $('#living-room-check').prop('checked', response['living_room']);
+        $('#office-check').prop('checked', response['office']);
+        $('#bedroom-check').prop('checked', response['bedroom']);
     });
 }
 
@@ -152,19 +170,7 @@ function setup() {
         });
     });
 
-    // Populate all the current color values from the server side
-    $.get({
-        url: '/api/get-rgbw',
-    }).then((data) => updateSlidersFromJson(data));
-
-    // Populate the room data
-    $.get({
-        url: '/api/get-rooms',
-    }).then((response) => {
-        $('#living-room-check').prop('checked', response['living_room']);
-        $('#office-check').prop('checked', response['office']);
-        $('#bedroom-check').prop('checked', response['bedroom']);
-    });
+    getLatestState();
 
     $.get({
         url: '/api/get-sequences',
