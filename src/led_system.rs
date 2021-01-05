@@ -81,14 +81,15 @@ impl LedSystem {
                 }
                 let sleep_duration =
                     delay.checked_sub(total_error).unwrap_or_default();
-                debug!(
+                trace!(
                     "Sleeping for {:?} (total error {:?})",
-                    sleep_duration, total_error
+                    sleep_duration,
+                    total_error
                 );
                 sleep(sleep_duration);
                 self.current_color = color;
 
-                debug!(
+                trace!(
                     "Iteration {} - {}, {}, {}, {} ({:?})",
                     i,
                     self.current_color.r,
@@ -106,7 +107,7 @@ impl LedSystem {
                 previous_time = current_time;
                 current_time = Instant::now();
             }
-            debug!("Time: {:?}", start.elapsed());
+            trace!("Time: {:?}", start.elapsed());
         }
         self.active = false;
     }

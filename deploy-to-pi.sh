@@ -19,6 +19,7 @@ export PKG_CONFIG_ALLOW_CROSS=1
 cargo build --target arm-unknown-linux-gnueabihf --release
 
 # Tar up the necessary files...
+rm -rf /tmp/led-foot /tmp/led-foot.tar.gz
 mkdir -p /tmp/led-foot
 
 cp -r led-foot-sequences index.html static systemd target/arm-unknown-linux-gnueabihf/release/led-foot /tmp/led-foot

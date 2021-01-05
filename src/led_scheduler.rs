@@ -1,6 +1,6 @@
+use std::collections::HashMap;
 use std::fs::File;
 use std::io::prelude::*;
-use std::collections::HashMap;
 
 use chrono::prelude::*;
 use serde_derive::{Deserialize, Serialize};

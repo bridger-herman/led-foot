@@ -135,7 +135,7 @@ impl SerialManager {
         if let Some(ref mut ser) = self.serial {
             // Send the color
             let write_bytes: [u8; UPDATE_BYTES] = rooms_to_bytes(state);
-            debug!("sending bytes: {:?}", write_bytes);
+            trace!("sending bytes: {:?}", write_bytes);
             ser.write_all(&write_bytes)
                 .expect("Couldn't write color bytes");
 
