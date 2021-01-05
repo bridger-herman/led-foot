@@ -302,9 +302,19 @@ function setupNav() {
             $('article').css('display', 'none');
             $('#' + id).css('display', 'block');
 
+            // Save the current target to localStorage
+            localStorage['currentArticle'] = evt.target.id;
+
             getLatestState();
         })
     });
+
+    // "click" the button to go back to the last page we were at
+    if (localStorage['currentArticle']) {
+        $('#' + localStorage['currentArticle']).trigger('click');
+    } else {
+        $('#favorites-button').trigger('click');
+    }
 }
 
 function getLatestState() {
@@ -411,7 +421,6 @@ function setup() {
     }).append($('<div>', {id: 'schedule-editor-content'}));
 
     setupNav();
-    $('#favorites-button').trigger('click');
 
     // Set up WeMo commands
     $('.wemo-button').on('click', (evt) => {
