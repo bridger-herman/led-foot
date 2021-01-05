@@ -174,6 +174,32 @@ function makeScheduleEditor(data, $scheduleElement) {
         $wemosInput.append($wemo);
     }
     $sed.append($wemosInput);
+
+    let sequencePaths = [];
+    $('#favorite-list>li>div').each((_i, el) => {
+        sequencePaths.push($(el).data('sequencePath'));
+    });
+
+    let $sequencesInput = $('<div>', {
+        class: 'schedule-input-row',
+    });
+    let $sequencesSelect = $('<select>', {
+        id: 'sequence-selector',
+    });
+    $sequencesSelect.append(
+        $('<option>', {val: undefined})
+    );
+    for (let seq of sequencePaths) {
+        $sequencesSelect.append(
+            $('<option>', {
+                val: seq,
+                text: stripName(seq),
+            })
+        )
+    }
+    $sequencesSelect.val(data.sequence);
+    $sequencesInput.append($sequencesSelect);
+    $sed.append($sequencesInput);
 }
 
 function makeScheduleElement(data) {
@@ -358,11 +384,13 @@ function setup() {
                         }
                     }
 
+                    let sequence = $(this).find('select#sequence-selector').val();
+
                     updateSchedule({
                         hour: parsedTime.hour,
                         minute: parsedTime.minute,
                         days,
-                        sequence: null,
+                        sequence,
                         rooms,
                         wemos,
                     }, $origSchedEl);
