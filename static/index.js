@@ -1,4 +1,5 @@
 const DAYS_OF_WEEK = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+const WEMO_COMMANDS = [undefined, 'on', 'off', 'toggle'];
 const ROOM_ICON_MAP = {
     'bedroom': 'night_shelter',
     'office': 'keyboard',
@@ -145,6 +146,34 @@ function makeScheduleEditor(data, $scheduleElement) {
         )
     }
     $sed.append($roomsInput);
+
+    let $wemosInput = $('<div>', {
+        class: 'schedule-input-row',
+    });
+    for (let wemo in WEMO_ICON_MAP) {
+        let $wemo = $('<span>', {
+            class: 'wemo-input'
+        }).append(
+            $('<label>', {
+                class: 'material-icons',
+                for: `wemo-command-${wemo}`,
+                text: WEMO_ICON_MAP[wemo],
+            })
+        );
+        let $select = $('<select>', {
+            id: `wemo-command-${wemo}`,
+        });
+        for (const cmd of WEMO_COMMANDS) {
+            $select.append($('<option>', {
+                val: cmd,
+                text: cmd,
+            }));
+        }
+        $select.val(data.wemos[wemo]);
+        $wemo.append($select);
+        $wemosInput.append($wemo);
+    }
+    $sed.append($wemosInput);
 }
 
 function makeScheduleElement(data) {
@@ -284,10 +313,6 @@ function setup() {
     //     updateSlidersFromJson(JSON.parse(evt.data));
     // };
 
-    $('body').append($('<button>', {
-        text: 'clickme'
-    }).on('click', () => updateSchedule()));
-
     let $schedEditor = $('<div>', {
         id: 'schedule-editor',
         title: 'Schedule Editor',
@@ -311,7 +336,6 @@ function setup() {
 
                     let time = $(this).find('input[type="time"]').val();
                     let parsedTime = parseTime(time);
-                    // $origSchedEl.find('.time').text(time);
 
                     let days = [];
                     for (const day of DAYS_OF_WEEK) {
@@ -319,14 +343,20 @@ function setup() {
                             days.push(day);
                         }
                     }
-                    // $origSchedEl.find('.days').text(days);
 
                     let rooms = {};
                     for (const room in ROOM_ICON_MAP) {
                         let checked = $(this).find(`input[type="checkbox"]#room-checkbox-${room}`).prop('checked');
                         rooms[room] = checked;
                     }
-                    // $origSchedEl.find('.rooms').data(days);
+
+                    let wemos = {};
+                    for (const wemo in WEMO_ICON_MAP) {
+                        let option = $(this).find(`select#wemo-command-${wemo}`).val();
+                        if (option) {
+                            wemos[wemo] = option;
+                        }
+                    }
 
                     updateSchedule({
                         hour: parsedTime.hour,
@@ -334,7 +364,7 @@ function setup() {
                         days,
                         sequence: null,
                         rooms,
-                        wemos: null,
+                        wemos,
                     }, $origSchedEl);
                     getLatestSchedule();
                     $(this).dialog('close');
