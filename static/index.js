@@ -50,24 +50,74 @@ function updateSchedule() {
 }
 
 function makeScheduleElement(data) {
-    return $('<div>', {
+    console.log(data);
+    let $el = $('<div>', {
         class: 'schedule-element'
     }).append(
-        $('<input>', {
-            type: 'text',
-            class: 'time time-picker',
-            value: `${data.hour}:${data.minute}`,
-        }).on('change', updateSchedule)
+        $('<p>', {text: `${data.hour.padStart(2)}:${data.minute.padStart(2)}`})
     ).append(
-        $('<input>', {
-            value: data.days,
-            class: 'days-input',
-        }).on('change', updateSchedule)
-    ).append(
-        $('<label>', {text: 'Days'})
-    ).append(
-        $('<img>', {src: data.sequence})
+        $('<p>', {text: data.days})
     );
+
+    if (data.rooms) {
+        const ROOM_ICON_MAP = {
+            'bedroom': 'king_bed',
+            'office': 'keyboard',
+            'living_room': 'weekend',
+        };
+        let $roomIcons = $('<p>');
+        for (let room in data.rooms) {
+            let on = data.rooms[room];
+            $roomIcons.append($('<span>', {
+                class: 'material-icons',
+                text: ROOM_ICON_MAP[room],
+                css: {
+                    color: on ? '#eee' : '#444',
+                },
+            }))
+        }
+        $el.append($roomIcons);
+    }
+
+    if (data.wemos) {
+        const WEMO_ICON_MAP = {
+            'Insight': 'wb_incandescent',
+            'Mini': 'radio',
+        };
+        let $wemoIcons = $('<p>');
+        for (let wemo in data.wemos) {
+            $wemoIcons.append(
+                $('<span>').append(
+                    $('<span>', {
+                        class: 'material-icons',
+                        text: WEMO_ICON_MAP[wemo],
+                    })
+                ).append($('<span>', {text: `: ${data.wemos[wemo]}`}))
+            )
+        }
+        $el.append($wemoIcons);
+    }
+
+    if (data.sequence) {
+        $el.append($('<img>', {src: data.sequence}));
+    }
+
+    return $el;
+    //     $('<input>', {
+    //         type: 'text',
+    //         class: 'time time-picker',
+    //         value: `${data.hour}:${data.minute}`,
+    //     }).on('change', updateSchedule)
+    // ).append(
+    //     $('<input>', {
+    //         value: data.days,
+    //         class: 'days-input',
+    //     }).on('change', updateSchedule)
+    // ).append(
+    //     $('<label>', {text: 'Days'})
+    // ).append(
+    //     $('<img>', {src: data.sequence})
+    // );
 }
 
 function updateSlidersFromJson(data) {

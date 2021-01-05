@@ -72,8 +72,13 @@ ul.no-indent {
 #schedule {
   display: block;
   margin: auto;
-  border: 1px solid white;
-  width: 30rem;
+  width: 50rem;
+}
+#schedule .schedule-element {
+  border: 1px solid #eee;
+  border-radius: 5px;
+  margin: 5rem 0;
+  padding: 2rem;
 }
 #schedule img {
   width: 100%;
