@@ -107,6 +107,9 @@ ul.no-indent {
 #schedule-editor-content .schedule-input-row {
   margin: 2rem 0;
 }
+#schedule-editor-content img {
+  width: 100%;
+}
 
 #rooms {
     display: flex;

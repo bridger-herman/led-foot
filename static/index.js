@@ -175,6 +175,10 @@ function makeScheduleEditor(data, $scheduleElement) {
     }
     $sed.append($wemosInput);
 
+    let $sequencePreview = $('<img>', {
+        src: data.sequence,
+    });
+
     let sequencePaths = [];
     $('#favorite-list>li>div').each((_i, el) => {
         sequencePaths.push($(el).data('sequencePath'));
@@ -198,7 +202,12 @@ function makeScheduleEditor(data, $scheduleElement) {
         )
     }
     $sequencesSelect.val(data.sequence);
+    $sequencesSelect.on('change', (evt) => {
+        let seq = $(evt.target).val();
+        $sequencePreview.attr('src', seq);
+    })
     $sequencesInput.append($sequencesSelect);
+    $sequencesInput.append($sequencePreview);
     $sed.append($sequencesInput);
 }
 
