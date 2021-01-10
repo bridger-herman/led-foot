@@ -61,6 +61,7 @@ impl LedScheduler {
             .expect("Unable to encode schdeule json string");
         file.write_all(json_string.as_bytes())
             .expect("Unable to rewrite schedule");
+        debug!("Wrote schedule file {}", SCHEDULE_FILE);
     }
 
     pub fn one_frame(&mut self) {

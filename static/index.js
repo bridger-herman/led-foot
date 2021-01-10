@@ -60,6 +60,9 @@ function updateSchedule(currentlyEdited, $origSchedEl) {
             let status = $(el).data('status');
             rooms[roomName] = status;
         });
+        if (Object.keys(rooms).length <= 0) {
+            rooms = null;
+        }
 
         let $wemos = $(element).find('.wemo-icon');
         let wemos = {};
@@ -68,6 +71,9 @@ function updateSchedule(currentlyEdited, $origSchedEl) {
             let cmd = $(el).data('command');
             wemos[wemoName] = cmd;
         });
+        if (Object.keys(wemos).length <= 0) {
+            wemos = null;
+        }
 
         schedule.push({
             days: days.split(','),
@@ -79,7 +85,7 @@ function updateSchedule(currentlyEdited, $origSchedEl) {
         });
     });
 
-    $.post({
+    return $.post({
         url: '/api/set-schedule',
         data: JSON.stringify(schedule),
         contentType: 'application/json; charset=utf-8',
@@ -412,8 +418,7 @@ function setup() {
                         sequence,
                         rooms,
                         wemos,
-                    }, $origSchedEl);
-                    getLatestSchedule();
+                    }, $origSchedEl).then(() => getLatestSchedule());
                     $(this).dialog('close');
                 }
             },
