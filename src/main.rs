@@ -88,10 +88,11 @@ async fn set_rooms(
 #[get("/api/get-sequences")]
 async fn get_sequences() -> Result<HttpResponse, Error> {
     let dir_listing = ::std::fs::read_dir("./led-foot-sequences")?;
-    let sequences: Vec<String> = dir_listing
+    let mut sequences: Vec<String> = dir_listing
         .map(|entry| entry.unwrap().path().to_str().unwrap().to_string())
         .filter(|path_string| path_string.ends_with(".png"))
         .collect();
+    sequences.sort();
 
     Ok(HttpResponse::Ok()
         .content_type("application/json; charset=utf-8")
