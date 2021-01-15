@@ -133,6 +133,7 @@ function makeScheduleEditor(data, $scheduleElement) {
         class: 'schedule-input-row',
     });
     for (let room in ROOM_ICON_MAP) {
+        let checked = data.rooms ? data.rooms[room] : false;
         $roomsInput.append(
             $('<span>', {
                 class: 'room-input'
@@ -140,7 +141,7 @@ function makeScheduleEditor(data, $scheduleElement) {
                 $('<input>', {
                     type: 'checkbox',
                     id: `room-checkbox-${room}`,
-                    prop: {checked: data.rooms[room]}
+                    prop: {checked}
                 })
             ).append(
                 $('<label>', {
