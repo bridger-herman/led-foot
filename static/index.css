@@ -110,6 +110,9 @@ ul.no-indent {
 #schedule-editor-content img {
   width: 100%;
 }
+.schedule-element.schedule-disabled {
+  opacity: 50%;
+}
 
 #rooms {
     display: flex;

@@ -80,6 +80,7 @@ function updateSchedule(currentlyEdited, $origSchedEl) {
             hour: time.hour,
             minute: time.minute,
             sequence: $(element).find('img').attr('src'),
+            enabled: $(element).find('p.enabled-indicator').html() == 'done',
             rooms,
             wemos,
         });
@@ -93,9 +94,22 @@ function updateSchedule(currentlyEdited, $origSchedEl) {
 }
 
 function makeScheduleEditor(data, $scheduleElement) {
+    let enabledDefined = typeof(data.enabled) !== 'undefined' && data.enabled !== null;
     let $sed = $('#schedule-editor-content');
     $sed.empty();
     $sed.data('scheduleElement', $scheduleElement);
+
+    $sed.append(
+        $('<div>', { class: 'schedule-input-row' }).append(
+            $('<input>', {
+                type: 'checkbox',
+                class: 'enabled-checkbox',
+                prop: { checked: enabledDefined ? data.enabled : true }
+            })
+        ).append(
+            $('<label>', { text: 'Enabled' })
+        )
+    );
 
     // This only works on FF, Chrome, and Edge.
     let $timeInput = $('<input>', {
@@ -219,6 +233,8 @@ function makeScheduleEditor(data, $scheduleElement) {
 }
 
 function makeScheduleElement(data) {
+    let enabledDefined = typeof(data.enabled) !== 'undefined' && data.enabled !== null;
+    let enabled = enabledDefined ? data.enabled : true;
     let $el = $('<div>', {
         class: 'schedule-element'
     }).append(
@@ -232,6 +248,11 @@ function makeScheduleElement(data) {
         })
     ).append(
         $('<p>', {
+            class: 'material-icons enabled-indicator',
+            text: enabled ? 'done' : 'close'
+        })
+    ).append(
+        $('<p>', {
             class: 'time',
             text: `${data.hour.padStart(2)}:${data.minute.padStart(2)}`,
         })
@@ -241,6 +262,12 @@ function makeScheduleElement(data) {
             text: data.days
         })
     );
+
+    if (enabled) {
+        $el.addClass('schedule-enabled');
+    } else {
+        $el.addClass('schedule-disabled');
+    }
 
     if (data.rooms) {
         let $roomIcons = $('<p>');
@@ -385,6 +412,8 @@ function setup() {
                 text: 'Save',
                 click: function() {
                     let $origSchedEl = $(this).children('#schedule-editor-content').data('scheduleElement');
+                    
+                    let enabled = $(this).find('input[type="checkbox"].enabled-checkbox').prop('checked');
 
                     let time = $(this).find('input[type="time"]').val();
                     let parsedTime = parseTime(time);
@@ -415,6 +444,7 @@ function setup() {
                     updateSchedule({
                         hour: parsedTime.hour,
                         minute: parsedTime.minute,
+                        enabled,
                         days,
                         sequence,
                         rooms,

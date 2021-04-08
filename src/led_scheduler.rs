@@ -17,6 +17,9 @@ pub struct LedAlarm {
     hour: String,
     minute: String,
 
+    /// Is the alarm enabled?
+    enabled: Option<bool>,
+
     /// The sequence to be used (given in png format)
     sequence: Option<String>,
 
@@ -81,6 +84,14 @@ impl LedScheduler {
 
         if self.current_minute_active.is_none() {
             for alarm in &self.alarms {
+                // First, confirm that the alarm is actually enabled
+                // Default to true if there's no entry for "enabled"
+                if let Some(enabled) = alarm.enabled {
+                    if !enabled {
+                        continue;
+                    }
+                }
+
                 for day in &alarm.days {
                     trace!(
                         "{:?} {:?} {:?} == {:?} {:?} {:?}",
@@ -91,6 +102,7 @@ impl LedScheduler {
                         &alarm.hour,
                         &alarm.minute
                     );
+
                     if now_weekday == day
                         && now_hour == &alarm.hour
                         && now_minute == &alarm.minute
