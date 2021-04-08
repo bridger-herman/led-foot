@@ -5,3 +5,4 @@ Cargo.lock
 *.orig
 schedule.json
 nohup.out
+.vscode
