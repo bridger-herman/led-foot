@@ -6,8 +6,8 @@ const ROOM_ICON_MAP = {
     'living_room': 'weekend',
 };
 const WEMO_ICON_MAP = {
-    'Insight': 'wb_incandescent',
-    'Mini': 'radio',
+    'Insight': 'restaurant',
+    'Mini': 'star',
 };
 
 // Relies on the
@@ -391,6 +391,31 @@ function setup() {
     // ws.onmessage = (evt) => {
     //     updateSlidersFromJson(JSON.parse(evt.data));
     // };
+
+    for (const name in WEMO_ICON_MAP) {
+        $('#wemos').append($('<button>', {
+            class: 'wemo-button',
+            id: name,
+        }).append($('<span>', {
+            class: 'material-icons',
+            text: WEMO_ICON_MAP[name]
+        })));
+    }
+
+    for (const name in ROOM_ICON_MAP) {
+        $('#rooms').append($('<span>').append(
+            $('<input>', {
+                id: `${name}-check`,
+                type: 'checkbox',
+            })
+        ).append(
+            $('<label>', {
+                for: `${name}-check`,
+                class: 'material-icons',
+                text: ROOM_ICON_MAP[name]
+            })
+        ));
+    }
 
     let $schedEditor = $('<div>', {
         id: 'schedule-editor',
