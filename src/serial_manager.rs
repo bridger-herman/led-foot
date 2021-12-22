@@ -204,11 +204,14 @@ impl From<&Color> for [u8; UPDATE_BYTES] {
 /// Convert to the format that the Arduino is expecting, including the prefix
 /// magic number ROOM_CMD
 fn rooms_to_bytes(rooms: &RoomManager) -> [u8; UPDATE_BYTES] {
+    let living = if let Some(room_val) = rooms.living_room { if room_val {LIVING_ROOM} else { 0x00 } } else { 0x00 };
+    let office = if let Some(room_val) = rooms.office { if room_val {OFFICE} else { 0x00 } } else { 0x00 };
+    let bedroom = if let Some(room_val) = rooms.bedroom { if room_val {BEDROOM} else { 0x00 } } else { 0x00 };
     [
         ROOM_CMD,
-        if rooms.living_room { LIVING_ROOM } else { 0x00 },
-        if rooms.office { OFFICE } else { 0x00 },
-        if rooms.bedroom { BEDROOM } else { 0x00 },
+        living,
+        office,
+        bedroom,
         0x00,
         0x00,
         0x00,
