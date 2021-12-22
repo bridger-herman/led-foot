@@ -18,7 +18,7 @@ const WEMO_ICON_MAP = {
 //
 // convention
 function stripName(sequencePath) {
-    let nameRegex = /.\/led-foot-sequences\/([a-zA-Z\-]+).png/;
+    let nameRegex = /.\/led-foot-sequences\/([0-9a-zA-Z\-]+).png/;
     let match = sequencePath.match(nameRegex);
     return match[1];
 }
