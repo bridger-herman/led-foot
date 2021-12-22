@@ -27,7 +27,7 @@ impl WemoManager {
             .output()
             .expect(ERROR_TEXT);
         if !output.status.success() {
-            panic!(ERROR_TEXT);
+            panic!("{}", ERROR_TEXT);
         }
         Self {}
     }
