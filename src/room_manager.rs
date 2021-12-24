@@ -1,6 +1,6 @@
 use serde_derive::{Deserialize, Serialize};
 
-use crate::led_state::{SERIAL_MANAGER, ROOM_MANAGER};
+use crate::led_state::SERIAL_MANAGER;
 
 /// Which rooms are currently active
 #[derive(Eq, PartialEq, Hash, Serialize, Deserialize, Debug, Clone)]
@@ -42,7 +42,10 @@ impl RoomManager {
         }
     }
 
-    pub fn set_active_rooms_option(&mut self, active_rooms: &ScheduledRoomState) {
+    pub fn set_active_rooms_option(
+        &mut self,
+        active_rooms: &ScheduledRoomState,
+    ) {
         *self = self.from_scheduled(active_rooms);
         if let Ok(mut man) = SERIAL_MANAGER.get().write() {
             man.send_rooms(&self);
@@ -60,7 +63,7 @@ impl RoomManager {
         RoomManager {
             living_room,
             office,
-            bedroom
+            bedroom,
         }
     }
 }
