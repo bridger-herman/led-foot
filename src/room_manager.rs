@@ -43,7 +43,7 @@ impl RoomManager {
     }
 
     pub fn set_active_rooms_option(&mut self, active_rooms: &ScheduledRoomState) {
-        *self = Self::from(active_rooms);
+        *self = self.from_scheduled(active_rooms);
         if let Ok(mut man) = SERIAL_MANAGER.get().write() {
             man.send_rooms(&self);
         }
@@ -51,6 +51,17 @@ impl RoomManager {
 
     pub fn active_rooms(&self) -> &Self {
         &self
+    }
+
+    fn from_scheduled(&self, scheduled: &ScheduledRoomState) -> RoomManager {
+        let living_room = scheduled.living_room.unwrap_or(self.living_room);
+        let office = scheduled.office.unwrap_or(self.office);
+        let bedroom = scheduled.bedroom.unwrap_or(self.bedroom);
+        RoomManager {
+            living_room,
+            office,
+            bedroom
+        }
     }
 }
 
@@ -70,21 +81,4 @@ pub struct ScheduledRoomState {
     pub living_room: Option<bool>,
     pub office: Option<bool>,
     pub bedroom: Option<bool>,
-}
-
-impl From<&ScheduledRoomState> for RoomManager {
-    fn from(scheduled: &ScheduledRoomState) -> RoomManager {
-        if let Ok(current_rooms) = ROOM_MANAGER.get().read() {
-            let living_room = scheduled.living_room.unwrap_or(current_rooms.living_room);
-            let office = scheduled.office.unwrap_or(current_rooms.office);
-            let bedroom = scheduled.bedroom.unwrap_or(current_rooms.bedroom);
-            RoomManager {
-                living_room,
-                office,
-                bedroom
-            }
-        } else {
-            RoomManager::default()
-        }
-    }
 }
