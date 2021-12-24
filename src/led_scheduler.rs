@@ -7,7 +7,7 @@ use serde_derive::{Deserialize, Serialize};
 use serde_json;
 
 use crate::led_state::{set_interrupt, LED_SYSTEM, ROOM_MANAGER, WEMO_MANAGER};
-use crate::room_manager::RoomManager;
+use crate::room_manager::ScheduledRoomState;
 
 const SCHEDULE_FILE: &str = "schedule.json";
 
@@ -24,7 +24,7 @@ pub struct LedAlarm {
     sequence: Option<String>,
 
     /// Which rooms to enable with this alarm
-    rooms: Option<RoomManager>,
+    rooms: Option<ScheduledRoomState>,
 
     /// Which wemos commands to give with this alarm; Map of (WeMo Device, Command)
     /// Command is "on", "off", or "toggle"
@@ -117,7 +117,7 @@ impl LedScheduler {
                         // See if we need to turn on/off any rooms...
                         if let Some(ref rooms) = alarm.rooms {
                             if let Ok(mut man) = ROOM_MANAGER.get().write() {
-                                man.set_active_rooms(rooms);
+                                man.set_active_rooms_option(rooms);
                             }
                         }
 

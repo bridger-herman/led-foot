@@ -1,6 +1,6 @@
 use serde_derive::{Deserialize, Serialize};
 
-use crate::led_state::SERIAL_MANAGER;
+use crate::led_state::{SERIAL_MANAGER, ROOM_MANAGER};
 
 /// Which rooms are currently active
 #[derive(Eq, PartialEq, Hash, Serialize, Deserialize, Debug, Clone)]
@@ -42,6 +42,13 @@ impl RoomManager {
         }
     }
 
+    pub fn set_active_rooms_option(&mut self, active_rooms: &ScheduledRoomState) {
+        *self = Self::from(active_rooms);
+        if let Ok(mut man) = SERIAL_MANAGER.get().write() {
+            man.send_rooms(&self);
+        }
+    }
+
     pub fn active_rooms(&self) -> &Self {
         &self
     }
@@ -53,6 +60,31 @@ impl Default for RoomManager {
             living_room: false,
             office: false,
             bedroom: false,
+        }
+    }
+}
+
+/// For scheduled events, allow rooms to be unset
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct ScheduledRoomState {
+    pub living_room: Option<bool>,
+    pub office: Option<bool>,
+    pub bedroom: Option<bool>,
+}
+
+impl From<&ScheduledRoomState> for RoomManager {
+    fn from(scheduled: &ScheduledRoomState) -> RoomManager {
+        if let Ok(current_rooms) = ROOM_MANAGER.get().read() {
+            let living_room = scheduled.living_room.unwrap_or(current_rooms.living_room);
+            let office = scheduled.office.unwrap_or(current_rooms.office);
+            let bedroom = scheduled.bedroom.unwrap_or(current_rooms.bedroom);
+            RoomManager {
+                living_room,
+                office,
+                bedroom
+            }
+        } else {
+            RoomManager::default()
         }
     }
 }
