@@ -1,6 +1,5 @@
 const DAYS_OF_WEEK = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 const WEMO_COMMANDS = [undefined, 'on', 'off', 'toggle'];
-const ROOM_OPTIONS = ['', 'on', 'off'];
 const ROOM_ICON_MAP = {
     'bedroom': 'night_shelter',
     'office': 'keyboard',
@@ -148,22 +147,17 @@ function makeScheduleEditor(data, $scheduleElement) {
         class: 'schedule-input-row',
     });
     for (let room in ROOM_ICON_MAP) {
-        let $select = $('<select>', {
-            id: `room-checkbox-${room}`,
-        });
-        for (const option of ROOM_OPTIONS) {
-            $select.append($('<option>', {
-                val: option,
-                text: option
-            }));
-        }
-        if (data.rooms && data.rooms[room] !== null && typeof(data.rooms[room]) !== "undefined") {
-            $select.val(data.rooms[room] === true ? 'on' : 'off');
-        }
+        let checked = data.rooms ? data.rooms[room] : false;
         $roomsInput.append(
             $('<span>', {
                 class: 'room-input'
-            }).append($select).append(
+            }).append(
+                $('<input>', {
+                    type: 'checkbox',
+                    id: `room-checkbox-${room}`,
+                    prop: {checked}
+                })
+            ).append(
                 $('<label>', {
                     class: 'material-icons',
                     for: `room-checkbox-${room}`,
@@ -458,11 +452,8 @@ function setup() {
 
                     let rooms = {};
                     for (const room in ROOM_ICON_MAP) {
-                        // let checked = $(this).find(`input[type="checkbox"]#room-checkbox-${room}`).prop('checked');
-                        let roomOption = $(this).find(`select#room-checkbox-${room}`).val();
-                        if (roomOption !== '') {
-                            rooms[room] = roomOption == 'on' ? true : false;
-                        }
+                        let checked = $(this).find(`input[type="checkbox"]#room-checkbox-${room}`).prop('checked');
+                        rooms[room] = checked;
                     }
 
                     let wemos = {};

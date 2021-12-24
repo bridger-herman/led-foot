@@ -13,21 +13,21 @@ pub enum Room {
 /// Control which rooms are currently active
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct RoomManager {
-    pub living_room: Option<bool>,
-    pub office: Option<bool>,
-    pub bedroom: Option<bool>,
+    pub living_room: bool,
+    pub office: bool,
+    pub bedroom: bool,
 }
 
 impl RoomManager {
     /// Set only this room to be active
     pub fn set_active_only(&mut self, room: Room) {
-        self.living_room = Some(false);
-        self.office = Some(false);
-        self.bedroom = Some(false);
+        self.living_room = false;
+        self.office = false;
+        self.bedroom = false;
         match room {
-            Room::LivingRoom => self.living_room = Some(true),
-            Room::Office => self.office = Some(true),
-            Room::Bedroom => self.bedroom = Some(true),
+            Room::LivingRoom => self.living_room = true,
+            Room::Office => self.office = true,
+            Room::Bedroom => self.bedroom = true,
         }
 
         if let Ok(mut man) = SERIAL_MANAGER.get().write() {
@@ -50,9 +50,9 @@ impl RoomManager {
 impl Default for RoomManager {
     fn default() -> Self {
         Self {
-            living_room: Some(false),
-            office: Some(false),
-            bedroom: Some(false),
+            living_room: false,
+            office: false,
+            bedroom: false,
         }
     }
 }
