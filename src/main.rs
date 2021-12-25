@@ -202,7 +202,7 @@ async fn main() -> std::io::Result<()> {
             .service(set_schedule)
             .service(wemo)
     })
-    .workers(4)
+    .workers(16)
     .bind("0.0.0.0:5000")?;
 
     thread::spawn(move || loop {
