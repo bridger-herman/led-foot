@@ -10,7 +10,8 @@ export OPENSSL_INCLUDE_DIR=$HOME/packages/openssl-OpenSSL_1_1_1h/include
 
 # Tell Rust where arm-linux-gnueabihf-gcc is
 # export PATH=$PATH:$HOME/GitHub/tools/arm-bcm2708/gcc-linaro-arm-linux-gnueabihf-raspbian/bin
-export PATH=$PATH:$HOME/GitHub/tools
+# export PATH=$PATH:$HOME/GitHub/tools
+export PATH=$PATH:$HOME/GitHub/tools/arm-bcm2708/arm-rpi-4.9.3-linux-gnueabihf/bin/
 
 # Allow for cross-compilation of external dependencies
 export PKG_CONFIG_ALLOW_CROSS=1
