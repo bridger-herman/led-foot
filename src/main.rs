@@ -114,6 +114,7 @@ async fn set_sequence(
     // Then, spawn a thread to handle the actual LED code
     std::thread::spawn(move || {
         if let Ok(mut sys) = LED_SYSTEM.get().write() {
+            debug!("Running sequence in thread {:?}", thread::current().id());
             sys.update_sequence(&sequence_name);
             sys.run_sequence();
         } else {

@@ -21,8 +21,14 @@ const BEDROOM: u8 = 0x18;
 const UPDATE_BYTES: usize = 9;
 const CONFIRMATION_BYTES: usize = 3;
 
+// Defaults for serial mockup
+const DEFAULT_MOCKUP_SPAN: usize = 30;
+
 pub struct SerialManager {
     pub serial: Option<SystemPort>,
+
+    serial_mockup_index: usize,
+    serial_mockup_span: usize,
 }
 
 impl SerialManager {
@@ -40,13 +46,21 @@ impl SerialManager {
             None
         };
 
-        let mut mgr = Self { serial };
+        let mut mgr = Self {
+            serial,
+            serial_mockup_index: 0,
+            serial_mockup_span: DEFAULT_MOCKUP_SPAN,
+        };
         if let Err(io_err) = mgr.setup() {
             warn!(
                 "Unable to initialize LEDs: {}. Using Serial Mockup.",
                 io_err
             );
-            Self { serial: None }
+            Self {
+                serial: None,
+                serial_mockup_index: 0,
+                serial_mockup_span: DEFAULT_MOCKUP_SPAN,
+            }
         } else {
             mgr
         }
@@ -96,7 +110,7 @@ impl SerialManager {
             // Send the color
             let write_bytes: [u8; UPDATE_BYTES] =
                 <[u8; UPDATE_BYTES]>::from(color);
-            debug!("sending bytes: {:?}", write_bytes);
+            trace!("sending bytes: {:?}", write_bytes);
             ser.write_all(&write_bytes)
                 .expect("Couldn't write color bytes");
 
@@ -113,20 +127,23 @@ impl SerialManager {
                 );
             }
         } else {
-            println!(
-                "\x1b[38;2;{};{};{}m{}\x1b[0m",
-                (color.r * f32::from(<u8>::max_value())) as u8,
-                (color.g * f32::from(<u8>::max_value())) as u8,
-                (color.b * f32::from(<u8>::max_value())) as u8,
-                "#".repeat(80),
-            );
-            println!(
-                "\x1b[38;2;{};{};{}m{}\x1b[0m\n",
-                (color.w * f32::from(<u8>::max_value())) as u8,
-                (color.w * f32::from(<u8>::max_value())) as u8,
-                (color.w * f32::from(<u8>::max_value())) as u8,
-                "#".repeat(80),
-            );
+            self.serial_mockup_index += 1;
+            if self.serial_mockup_index % self.serial_mockup_span == 0 {
+                println!(
+                    "\x1b[38;2;{};{};{}m{}\x1b[0m",
+                    (color.r * f32::from(<u8>::max_value())) as u8,
+                    (color.g * f32::from(<u8>::max_value())) as u8,
+                    (color.b * f32::from(<u8>::max_value())) as u8,
+                    "#".repeat(80),
+                );
+                println!(
+                    "\x1b[38;2;{};{};{}m{}\x1b[0m\n",
+                    (color.w * f32::from(<u8>::max_value())) as u8,
+                    (color.w * f32::from(<u8>::max_value())) as u8,
+                    (color.w * f32::from(<u8>::max_value())) as u8,
+                    "#".repeat(80),
+                );
+            }
         }
     }
 
