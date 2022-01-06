@@ -367,9 +367,9 @@ function getLatestState() {
     $.get({
         url: '/api/get-rooms',
     }).then((response) => {
-        $('#living-room-check').prop('checked', response['living_room']);
-        $('#office-check').prop('checked', response['office']);
-        $('#bedroom-check').prop('checked', response['bedroom']);
+        for (const room in ROOM_ICON_MAP) {
+            $(`#${room}-check`).prop('checked', response[room] === true);
+        }
     });
 }
 
