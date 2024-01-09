@@ -125,14 +125,17 @@ impl LedSequence {
             png::Decoder::new(File::open(img_path).unwrap_or_else(|_| {
                 panic!("Unable to open sequence file {:?}", img_path)
             }));
-        let (png_info, mut reader) =
-            decoder.read_info().expect("Unable to decode png");
-        let mut buf = vec![0; png_info.buffer_size()];
+
+        let mut reader = decoder.read_info().expect("Unable to decode png");
+        let mut buf = vec![0; reader.output_buffer_size()];
         reader.next_frame(&mut buf).unwrap();
 
+        let width = reader.info().width;
+        let height = reader.info().height;
+
         let first_white_index = 3
-            * png_info.width as usize
-            * (png_info.height as usize / 2) as usize;
+            * width as usize
+            * (height as usize / 2) as usize;
 
         match info.sequence_type {
             LedSequenceType::Color => {
@@ -143,8 +146,8 @@ impl LedSequence {
             }
             LedSequenceType::Gradient => {
                 let mut colors =
-                    VecDeque::with_capacity(png_info.width as usize);
-                for i in (0..(png_info.width as usize * 3)).step_by(3) {
+                    VecDeque::with_capacity(width as usize);
+                for i in (0..(width as usize * 3)).step_by(3) {
                     let raw_color = [
                         buf[i],
                         buf[i + 1],

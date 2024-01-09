@@ -1,12 +1,12 @@
 [package]
 name = "led-foot"
-version = "0.1.0"
-authors = ["Bridger Herman <herma582@umn.edu>"]
-edition = "2018"
+version = "0.2.0"
+authors = ["Bridger Herman <bridger.g.herman@gmail.com>"]
+edition = "2021"
 
 [dependencies]
-simple_logger = "1.11"
-png = "0.14"
+simple_logger = "4.3"
+png = "0.17"
 median = "0.3"
 serial = "0.4"
 log = "0.4"
@@ -15,7 +15,7 @@ serde = "1.0"
 serde_derive = "1.0"
 chrono = "0.4"
 
-actix-web = "3"
-actix-files = "0.3"
+actix-web = "4.4"
+actix-files = "0.6"
 
-state = "0.4"
+state = "0.6"

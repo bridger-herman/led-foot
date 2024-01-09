@@ -1,6 +1,6 @@
 use std::sync::RwLock;
 
-use state::Storage;
+use state::InitCell;
 
 use crate::led_scheduler::LedScheduler;
 use crate::led_system::LedSystem;
@@ -8,14 +8,14 @@ use crate::room_manager::RoomManager;
 use crate::serial_manager::SerialManager;
 use crate::wemo_manager::WemoManager;
 
-pub static SERIAL_MANAGER: Storage<RwLock<SerialManager>> = Storage::new();
-pub static ROOM_MANAGER: Storage<RwLock<RoomManager>> = Storage::new();
-pub static LED_SYSTEM: Storage<RwLock<LedSystem>> = Storage::new();
-pub static LED_SCHEDULER: Storage<RwLock<LedScheduler>> = Storage::new();
-pub static WEMO_MANAGER: Storage<WemoManager> = Storage::new();
+pub static SERIAL_MANAGER: InitCell<RwLock<SerialManager>> = InitCell::new();
+pub static ROOM_MANAGER: InitCell<RwLock<RoomManager>> = InitCell::new();
+pub static LED_SYSTEM: InitCell<RwLock<LedSystem>> = InitCell::new();
+pub static LED_SCHEDULER: InitCell<RwLock<LedScheduler>> = InitCell::new();
+pub static WEMO_MANAGER: InitCell<WemoManager> = InitCell::new();
 
 /// Flag if the LEDs need to be interrupted to switch over to the next sequence
-static SEQUENCE_INTERRUPT: Storage<RwLock<bool>> = Storage::new();
+static SEQUENCE_INTERRUPT: InitCell<RwLock<bool>> = InitCell::new();
 
 pub fn set_interrupt(value: bool) {
     if let Ok(mut interrupt) = SEQUENCE_INTERRUPT.get().write() {
