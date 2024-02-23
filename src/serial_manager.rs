@@ -6,7 +6,7 @@ use std::time::Duration;
 use serial::{SerialPort, SystemPort};
 
 use crate::color::Color;
-use crate::room_manager::RoomManager;
+use crate::rooms::Rooms;
 
 // Magic numbers for color or room relay commands
 const COLOR_CMD: u8 = 0xC0;
@@ -148,7 +148,7 @@ impl SerialManager {
     }
 
     /// Send the current room state to the Arduino
-    pub fn send_rooms(&mut self, state: &RoomManager) {
+    pub fn send_rooms(&mut self, state: &Rooms) {
         if let Some(ref mut ser) = self.serial {
             // Send the color
             let write_bytes: [u8; UPDATE_BYTES] = rooms_to_bytes(state);
@@ -220,7 +220,7 @@ impl From<&Color> for [u8; UPDATE_BYTES] {
 
 /// Convert to the format that the Arduino is expecting, including the prefix
 /// magic number ROOM_CMD
-fn rooms_to_bytes(rooms: &RoomManager) -> [u8; UPDATE_BYTES] {
+fn rooms_to_bytes(rooms: &Rooms) -> [u8; UPDATE_BYTES] {
     [
         ROOM_CMD,
         if rooms.living_room { LIVING_ROOM } else { 0x00 },

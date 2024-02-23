@@ -6,8 +6,8 @@ use chrono::prelude::*;
 use serde_derive::{Deserialize, Serialize};
 use serde_json;
 
-use crate::led_state::{set_interrupt, LED_SYSTEM, ROOM_MANAGER, WEMO_MANAGER};
-use crate::room_manager::ScheduledRoomState;
+// use crate::led_state::{set_interrupt, LED_SYSTEM, ROOM_MANAGER, WEMO_MANAGER};
+use crate::rooms::ScheduledRoomState;
 
 const SCHEDULE_FILE: &str = "schedule.json";
 
@@ -112,36 +112,36 @@ impl LedScheduler {
                             day, alarm.hour, alarm.minute
                         );
                         // Signal that we need to interrupt the current sequence
-                        set_interrupt(true);
+                        // set_interrupt(true);
 
                         // See if we need to turn on/off any rooms...
-                        if let Some(ref rooms) = alarm.rooms {
-                            if let Ok(mut man) = ROOM_MANAGER.get().write() {
-                                man.set_active_rooms_option(rooms);
-                            }
-                        }
+                        // if let Some(ref rooms) = alarm.rooms {
+                        //     if let Ok(mut man) = ROOM_MANAGER.get().write() {
+                        //         man.set_active_rooms_option(rooms);
+                        //     }
+                        // }
 
-                        // See if we need to turn on/off any wemos...
-                        if let Some(ref wemos) = alarm.wemos {
-                            for (wemo, cmd) in wemos.iter() {
-                                WEMO_MANAGER.get().send_wemo_command(wemo, cmd);
-                            }
-                        }
+                        // // See if we need to turn on/off any wemos...
+                        // if let Some(ref wemos) = alarm.wemos {
+                        //     for (wemo, cmd) in wemos.iter() {
+                        //         WEMO_MANAGER.get().send_wemo_command(wemo, cmd);
+                        //     }
+                        // }
 
                         // Then, spawn a thread to handle the actual LED code
-                        if let Some(ref seq) = alarm.sequence {
-                            let alarm_copy_sequence = seq.clone();
-                            std::thread::spawn(move || {
-                                if let Ok(mut sys) = LED_SYSTEM.get().write() {
-                                    sys.update_sequence(&alarm_copy_sequence);
-                                    sys.run_sequence();
-                                } else {
-                                    error!(
-                                        "Unable to acquire lock on LED system"
-                                    );
-                                };
-                            });
-                        }
+                        // if let Some(ref seq) = alarm.sequence {
+                        //     let alarm_copy_sequence = seq.clone();
+                        //     std::thread::spawn(move || {
+                        //         if let Ok(mut sys) = LED_SYSTEM.get().write() {
+                        //             sys.update_sequence(&alarm_copy_sequence);
+                        //             sys.run_sequence();
+                        //         } else {
+                        //             error!(
+                        //                 "Unable to acquire lock on LED system"
+                        //             );
+                        //         };
+                        //     });
+                        // }
 
                         self.current_minute_active = Some(alarm.clone());
                     }

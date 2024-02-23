@@ -2,43 +2,39 @@ use std::sync::RwLock;
 
 use state::InitCell;
 
-use crate::led_scheduler::LedScheduler;
-use crate::led_system::LedSystem;
-use crate::room_manager::RoomManager;
-use crate::serial_manager::SerialManager;
-use crate::wemo_manager::WemoManager;
+use crate::color::Color;
+use crate::led_sequence::LedSequence;
+use crate::led_config::LedConfig;
+use crate::rooms::Rooms;
 
-pub static SERIAL_MANAGER: InitCell<RwLock<SerialManager>> = InitCell::new();
-pub static ROOM_MANAGER: InitCell<RwLock<RoomManager>> = InitCell::new();
-pub static LED_SYSTEM: InitCell<RwLock<LedSystem>> = InitCell::new();
-pub static LED_SCHEDULER: InitCell<RwLock<LedScheduler>> = InitCell::new();
-pub static WEMO_MANAGER: InitCell<WemoManager> = InitCell::new();
+pub static LED_STATE: InitCell<RwLock<LedState>> = InitCell::new();
+pub static LED_CONFIG: InitCell<LedConfig> = InitCell::new();
 
-/// Flag if the LEDs need to be interrupted to switch over to the next sequence
-static SEQUENCE_INTERRUPT: InitCell<RwLock<bool>> = InitCell::new();
+pub struct LedState {
+    /// Current color that the LEDs are
+    pub current_color: Color,
 
-pub fn set_interrupt(value: bool) {
-    if let Ok(mut interrupt) = SEQUENCE_INTERRUPT.get().write() {
-        *interrupt = value;
-    } else {
-        error!("Unable to set interrupt!");
-    }
-}
+    /// Current state of room relays
+    pub current_rooms: Rooms,
 
-pub fn is_interrupted() -> bool {
-    if let Ok(interrupt) = SEQUENCE_INTERRUPT.get().read() {
-        *interrupt
-    } else {
-        error!("Unable to get interrupt!");
-        false
-    }
+    /// Current sequence the LEDs are running, if any
+    pub current_sequence: Option<LedSequence>,
+
+    /// Is the LED system currently running a sequence or transition?
+    pub active: bool,
+
+    /// Is the system in the process of shutting down?
+    pub shutdown: bool,
 }
 
 pub fn init() {
-    SEQUENCE_INTERRUPT.set(RwLock::new(false));
-    SERIAL_MANAGER.set(RwLock::new(SerialManager::default()));
-    ROOM_MANAGER.set(RwLock::new(RoomManager::default()));
-    LED_SYSTEM.set(RwLock::new(LedSystem::default()));
-    LED_SCHEDULER.set(RwLock::new(LedScheduler::default()));
-    WEMO_MANAGER.set(WemoManager::new());
+    LED_STATE.set(RwLock::new(LedState {
+        current_color: Color::new(0.0, 0.0, 0.0, 0.0),
+        current_rooms: Rooms { living_room: false, office: false, bedroom: false },
+        current_sequence: None,
+        active: false,
+        shutdown: false,
+    }));
+
+    LED_CONFIG.set(LedConfig::new());
 }

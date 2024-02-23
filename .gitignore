@@ -6,3 +6,4 @@ Cargo.lock
 schedule.json
 nohup.out
 .vscode
+led_config.toml
