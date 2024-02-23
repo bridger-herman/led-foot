@@ -17,15 +17,15 @@ use std::time::Duration;
 
 use actix_files::Files;
 use actix_web::error::ErrorInternalServerError;
+use actix_web::http::header::ContentType;
 use actix_web::{
     get, middleware, post, web, App, Error, HttpResponse, HttpServer, Result,
+    Responder, HttpRequest
 };
 
 use crate::color::Color;
 use crate::led_scheduler::LedAlarm;
-use crate::led_state::{
-    // set_interrupt, LED_SCHEDULER, LED_SYSTEM, ROOM_MANAGER, WEMO_MANAGER,
-};
+use crate::led_state::LED_STATE;
 use crate::rooms::Rooms;
 
 // #[post("/api/wemo")]
@@ -37,6 +37,39 @@ use crate::rooms::Rooms;
 //     }
 //     Ok(HttpResponse::Ok().json("{}"))
 // }
+
+// API Endpoints:
+// /api/get-rgbw
+// /api/set-rgbw
+//
+// /api/get-sequence
+// /api/set-sequence
+//
+// /api/get-rooms
+// /api/set-rooms
+
+
+async fn get_color() -> HttpResponse {
+    if let Ok(led_state) = LED_STATE.get().read() {
+        HttpResponse::Ok()
+            .content_type(ContentType::json())
+            .json(led_state.current_color.clone())
+    } else {
+        error!("Error on /api/get-state: can't get lock on state");
+        HttpResponse::InternalServerError().into()
+    }
+}
+
+async fn set_color(payload: web::Json<Color>) -> HttpResponse {
+    if let Ok(mut led_state) = LED_STATE.get().write() {
+        led_state.current_color = payload.clone();
+    }
+    HttpResponse::Ok()
+        .content_type(ContentType::plaintext())
+        .body(format!("Set color to {:?}", payload))
+}
+
+
 
 // #[get("/api/get-rgbw")]
 // async fn get_rgbw() -> Result<HttpResponse, Error> {
@@ -172,9 +205,6 @@ async fn main() -> std::io::Result<()> {
         .init()
         .expect("Unable to initialize log");
 
-    // Initialize state
-    led_state::init();
-
     let server = HttpServer::new(|| {
         App::new()
             // Enable the logger.
@@ -188,8 +218,9 @@ async fn main() -> std::io::Result<()> {
             .service(Files::new("/static", "static"))
             // index.html
             .service(index)
-            // The rest of the services for controlling the LEDs
-            // .service(get_rgbw)
+            // The rest of the routes for controlling the LEDs
+            .route("/api/get-color", web::get().to(get_color))
+            .route("/api/set-color", web::post().to(set_color))
             // .service(set_rgbw)
             // .service(get_rooms)
             // .service(set_rooms)
@@ -202,6 +233,13 @@ async fn main() -> std::io::Result<()> {
     // .workers(16)
     .bind("0.0.0.0:5000")?;
 
+    // Initialize state
+    led_state::init_global_state();
+
+    // Start the LED System
+    let sys = led_system::LedSystem::new();
+
+
     // thread::spawn(move || loop {
     //     if let Ok(mut sched) = LED_SCHEDULER.get().write() {
     //         sched.one_frame();
@@ -209,5 +247,14 @@ async fn main() -> std::io::Result<()> {
     //     thread::sleep(Duration::from_secs(1));
     // });
 
-    server.run().await
+    server.run()
+        .await
+        .and_then(|_| {
+            sys.shutdown()
+            .map(|r| {
+                debug!("LED system shutdown normally");
+                r
+            })
+            .map_err(|msg| std::io::Error::new(std::io::ErrorKind::Other, msg))
+        })
 }

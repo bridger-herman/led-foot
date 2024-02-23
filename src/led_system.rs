@@ -18,10 +18,14 @@ pub struct LedSystem {
 /// to the serial USB if there's a sequence running, otherwise it will spin.
 impl LedSystem {
        pub fn new() -> Self {
+        // Initialize the serial manager (needs to send/receive initialing message)
+        let mut mgr = SerialManager::new(&LED_CONFIG.get().tty_name);
+        mgr.setup().expect("Unable to set up Serial Manager");
+
         let t = std::thread::spawn(|| LedSystem::led_sequence_worker());
 
         Self {
-            serial_manager: SerialManager::new(&LED_CONFIG.get().tty_name),
+            serial_manager: mgr,
             sequence_thread: t,
         }
     }
@@ -42,6 +46,8 @@ impl LedSystem {
     fn led_sequence_worker() {
         loop {
             if let Ok(state) = LED_STATE.get().read() {
+                debug!("current state: {:#?}", &state);
+
                 if state.shutdown {
                     break;
                 }

@@ -1,84 +1,50 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8">
-  <title>LED Control</title>
-  <link rel="stylesheet" href="./static/index.css">
-  <link rel="stylesheet" href="./static/ranges.css">
-  <link rel="stylesheet" href="http://code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css">
-  <link href="https://fonts.googleapis.com/icon?family=Material+Icons"
-      rel="stylesheet">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LED Control</title>
 </head>
 <body>
-  <header>
-    <span id="rooms"></span>
-    <span id="wemos"></span>
-  </header>
+    <button id="get-color">Get Color!</button>
+    <button id="set-color">Set Color!</button>
+    <input type="number" name="" id="r" value="0" min="0" max="1" step="0.1">
+    <input type="number" name="" id="g" value="0" min="0" max="1" step="0.1">
+    <input type="number" name="" id="b" value="0" min="0" max="1" step="0.1">
+    <input type="number" name="" id="w" value="0" min="0" max="1" step="0.1">
+
+    <script>
+        const ButtonGetColor = document.getElementById('get-color');
+        const ButtonSetColor = document.getElementById('set-color');
+        const InputR = document.getElementById('r');
+        const InputG = document.getElementById('g');
+        const InputB = document.getElementById('b');
+        const InputW = document.getElementById('w');
+
+        ButtonGetColor.addEventListener('click', () => {
+            fetch("/api/get-color")
+                .then(resp => resp.json())
+                .then(j => console.log(j))
+        });
+
+        ButtonSetColor.addEventListener('click', () => {
+            let j = { 
+                r: +InputR.value,
+                g: +InputG.value,
+                b: +InputB.value,
+                w: +InputW.value,
+             };
+            console.log(JSON.stringify(j))
+            fetch(`/api/set-color`, {
+                method: 'POST',
+                body: JSON.stringify(j),
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            });
+        });
 
 
-  <article id="favorites">
-    <div class="centered container favorites" id="favorite-gradients">
-      <ul class="no-indent" id='favorite-list'>
-        <!-- auto populated -->
-      </ul>
-    </div>
-  </article>
-
-  <article id="inputs">
-    <div class="container input-range-container">
-      <form id="solid-rgbw-input"
-            name="solid-rgbw-input">
-        <input id="input-range-red"
-              max="1"
-              min="0"
-              step="0.001"
-              name="r"
-              type="range">
-        <input id="input-range-green"
-              max="1"
-              min="0"
-              step="0.001"
-              name="g"
-              type="range">
-        <input id="input-range-blue"
-              max="1"
-              min="0"
-              step="0.001"
-              name="b"
-              type="range">
-        <input id="input-range-white"
-              max="1"
-              min="0"
-              step="0.001"
-              name="w"
-              type="range">
-      </form>
-    </div>
-  </article>
-
-  <article id="schedules">
-    <div id="schedule">
-      <!-- auto populated -->
-    </div>
-  </article>
-
-  <footer>
-    <nav>
-      <button class="material-icons" id="favorites-button">favorite</button>
-      <button class="material-icons" id="schedules-button">schedule</button>
-      <button class="material-icons" id="inputs-button">settings_input_component</button>
-    </nav>
-  </footer>
-
-  <script src=
-  "https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
-  <!-- <script src=
-  "https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.js"></script> -->
-   <script
-      src="http://code.jquery.com/ui/1.12.1/jquery-ui.min.js"
-      integrity="sha256-VazP97ZCwtekAsvgPBSUwPFKdrwD3unUfSGVYrahUqU="
-      crossorigin="anonymous"></script>
-
-  <script src="./static/index.js"></script>
+    </script>
 </body>
 </html>

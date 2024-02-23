@@ -1,5 +1,6 @@
 use std::sync::RwLock;
 
+use serde_derive::{Deserialize, Serialize};
 use state::InitCell;
 
 use crate::color::Color;
@@ -10,6 +11,7 @@ use crate::rooms::Rooms;
 pub static LED_STATE: InitCell<RwLock<LedState>> = InitCell::new();
 pub static LED_CONFIG: InitCell<LedConfig> = InitCell::new();
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct LedState {
     /// Current color that the LEDs are
     pub current_color: Color,
@@ -18,6 +20,7 @@ pub struct LedState {
     pub current_rooms: Rooms,
 
     /// Current sequence the LEDs are running, if any
+    #[serde(skip)]
     pub current_sequence: Option<LedSequence>,
 
     /// Is the LED system currently running a sequence or transition?
@@ -27,7 +30,7 @@ pub struct LedState {
     pub shutdown: bool,
 }
 
-pub fn init() {
+pub fn init_global_state() {
     LED_STATE.set(RwLock::new(LedState {
         current_color: Color::new(0.0, 0.0, 0.0, 0.0),
         current_rooms: Rooms { living_room: false, office: false, bedroom: false },

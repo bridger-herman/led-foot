@@ -37,7 +37,7 @@ pub struct LedColorPoints {
     pub info: LedSequenceInfo,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct LedSequence {
     pub colors: VecDeque<Color>,
     pub info: LedSequenceInfo,
