@@ -13,13 +13,36 @@
     <input type="number" name="" id="b" value="0" min="0" max="1" step="0.1">
     <input type="number" name="" id="w" value="0" min="0" max="1" step="0.1">
 
+    <hr>
+    <input type="text" id="sequence">
+    <button id="set-sequence">Set Sequence!</button>
+    <button id="get-sequence">Get Sequence!</button>
+
+    <hr>
+    <input type="checkbox" name="" id="living-room">
+    <input type="checkbox" name="" id="bedroom">
+    <input type="checkbox" name="" id="office">
+    <button id="set-rooms">Set rooms!</button>
+    <button id="get-rooms">Get rooms!</button>
+
     <script>
         const ButtonGetColor = document.getElementById('get-color');
         const ButtonSetColor = document.getElementById('set-color');
+        const ButtonGetSequence = document.getElementById('get-sequence');
+        const ButtonSetSequence = document.getElementById('set-sequence');
+        const ButtonGetRooms = document.getElementById('get-rooms');
+        const ButtonSetRooms = document.getElementById('set-rooms');
+
         const InputR = document.getElementById('r');
         const InputG = document.getElementById('g');
         const InputB = document.getElementById('b');
         const InputW = document.getElementById('w');
+
+        const InputSeq = document.getElementById('sequence');
+
+        const InputLR = document.getElementById('living-room');
+        const InputBed = document.getElementById('bedroom');
+        const InputOffice = document.getElementById('office');
 
         ButtonGetColor.addEventListener('click', () => {
             fetch("/api/get-color")
@@ -36,6 +59,41 @@
              };
             console.log(JSON.stringify(j))
             fetch(`/api/set-color`, {
+                method: 'POST',
+                body: JSON.stringify(j),
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            });
+        });
+
+        ButtonGetSequence.addEventListener('click', () => {
+            fetch("/api/get-sequence")
+                .then(resp => resp.json())
+                .then(j => console.log(j))
+        });
+
+        ButtonSetSequence.addEventListener('click', () => {
+            fetch(`/api/set-sequence`, {
+                method: 'POST',
+                body: InputSeq.value,
+            });
+        });
+
+        ButtonGetRooms.addEventListener('click', () => {
+            fetch("/api/get-rooms")
+                .then(resp => resp.json())
+                .then(j => console.log(j))
+        });
+
+        ButtonSetRooms.addEventListener('click', () => {
+            let j = { 
+                living_room: InputLR.checked,
+                bedroom: InputBed.checked,
+                office: InputOffice.checked,
+             };
+            console.log(JSON.stringify(j))
+            fetch(`/api/set-rooms`, {
                 method: 'POST',
                 body: JSON.stringify(j),
                 headers: {

@@ -14,6 +14,7 @@ pub mod wemo_manager;
 use std::collections::HashMap;
 use std::thread;
 use std::time::Duration;
+use std::path::Path;
 
 use actix_files::Files;
 use actix_web::error::ErrorInternalServerError;
@@ -22,9 +23,11 @@ use actix_web::{
     get, middleware, post, web, App, Error, HttpResponse, HttpServer, Result,
     Responder, HttpRequest
 };
+use led_sequence::LedSequenceInfo;
 
 use crate::color::Color;
 use crate::led_scheduler::LedAlarm;
+use crate::led_sequence::LedSequence;
 use crate::led_state::LED_STATE;
 use crate::rooms::Rooms;
 
@@ -55,7 +58,7 @@ async fn get_color() -> HttpResponse {
             .content_type(ContentType::json())
             .json(led_state.current_color.clone())
     } else {
-        error!("Error on /api/get-state: can't get lock on state");
+        error!("Error on /api/get-color: can't get lock on state");
         HttpResponse::InternalServerError().into()
     }
 }
@@ -63,10 +66,69 @@ async fn get_color() -> HttpResponse {
 async fn set_color(payload: web::Json<Color>) -> HttpResponse {
     if let Ok(mut led_state) = LED_STATE.get().write() {
         led_state.current_color = payload.clone();
+        HttpResponse::Ok()
+            .content_type(ContentType::plaintext())
+            .body(format!("Set color to {:?}", payload))
+    } else {
+        error!("Error on /api/set-color: can't get lock on state");
+        HttpResponse::InternalServerError().into()
     }
-    HttpResponse::Ok()
-        .content_type(ContentType::plaintext())
-        .body(format!("Set color to {:?}", payload))
+}
+
+async fn get_sequence() -> HttpResponse {
+    if let Ok(led_state) = LED_STATE.get().read() {
+        let current_sequence_name = led_state.current_sequence.clone().map_or(None, |s| Some(s.info.name));
+        HttpResponse::Ok()
+            .content_type(ContentType::json())
+            .json(current_sequence_name)
+    } else {
+        error!("Error on /api/get-sequence: can't get lock on state");
+        HttpResponse::InternalServerError().into()
+    }
+}
+
+async fn set_sequence(payload: String) -> HttpResponse {
+    if let Ok(ref mut led_state) = LED_STATE.get().write() {
+        let seq_path = payload.replace("png", "json");
+        debug!("Sequence path: {:?}", seq_path);
+        let seq_with_transition = LedSequence::from_color_points(
+            &led_state.current_color,
+            // TODO: Fix this on the javascript side (generate the colors from the
+            // json)
+            Path::new(&seq_path),
+        );
+        led_state.current_sequence = seq_with_transition.ok();
+
+        HttpResponse::Ok()
+            .content_type(ContentType::plaintext())
+            .body(format!("Set sequence to to {:?}", payload))
+    } else {
+        error!("Error on /api/set-sequence: can't get lock on state");
+        HttpResponse::InternalServerError().into()
+    }
+}
+
+async fn get_rooms() -> HttpResponse {
+    if let Ok(led_state) = LED_STATE.get().read() {
+        HttpResponse::Ok()
+            .content_type(ContentType::json())
+            .json(led_state.current_rooms.clone())
+    } else {
+        error!("Error on /api/get-rooms: can't get lock on state");
+        HttpResponse::InternalServerError().into()
+    }
+}
+
+async fn set_rooms(payload: web::Json<Rooms>) -> HttpResponse {
+    if let Ok(mut led_state) = LED_STATE.get().write() {
+        led_state.current_rooms = payload.clone();
+        HttpResponse::Ok()
+            .content_type(ContentType::plaintext())
+            .body(format!("Set rooms to {:?}", payload))
+    } else {
+        error!("Error on /api/set-rooms: can't get lock on state");
+        HttpResponse::InternalServerError().into()
+    }
 }
 
 
@@ -221,7 +283,10 @@ async fn main() -> std::io::Result<()> {
             // The rest of the routes for controlling the LEDs
             .route("/api/get-color", web::get().to(get_color))
             .route("/api/set-color", web::post().to(set_color))
-            // .service(set_rgbw)
+            .route("/api/get-sequence", web::get().to(get_sequence))
+            .route("/api/set-sequence", web::post().to(set_sequence))
+            .route("/api/get-rooms", web::get().to(get_rooms))
+            .route("/api/set-rooms", web::post().to(set_rooms))
             // .service(get_rooms)
             // .service(set_rooms)
             // .service(get_sequences)

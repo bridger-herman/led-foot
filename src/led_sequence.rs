@@ -3,12 +3,12 @@ use std::fs::File;
 use std::io::Read;
 use std::path::Path;
 
-use serde_derive::Deserialize;
+use serde_derive::{Serialize, Deserialize};
 
 use crate::color::Color;
 
 /// 30 "frames" per second for smoothness
-pub const RESOLUTION: f32 = 30.0;
+pub const RESOLUTION: f32 = 2.0;
 
 /// How long the initial fade between sequences should be
 const FADE_DURATION: f32 = 0.5;
@@ -16,13 +16,13 @@ const FADE_DURATION: f32 = 0.5;
 /// Median filter size for initial
 const MEDIAN_FILTER_SIZE: usize = 51;
 
-#[derive(Debug, Clone, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum LedSequenceType {
     Color,
     Gradient,
 }
 
-#[derive(Debug, Clone, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct LedSequenceInfo {
     pub sequence_type: LedSequenceType,
     pub name: String,
@@ -176,18 +176,15 @@ impl LedSequence {
         }
     }
 
-    pub fn from_color_points(fade_from: &Color, points_path: &Path) -> Self {
-        let mut file =
-            File::open(points_path).expect("Unable to open sequence file");
+    pub fn from_color_points(fade_from: &Color, points_path: &Path) -> Result<Self, std::io::Error> {
+        let mut file = File::open(points_path)?;
         let mut contents = String::new();
-        file.read_to_string(&mut contents)
-            .expect("Unable to read sequence file");
-        let points: LedColorPoints = serde_json::from_str(&contents)
-            .expect("Unable to parse sequence file");
+        file.read_to_string(&mut contents)?;
+        let points: LedColorPoints = serde_json::from_str(&contents)?;
 
         match points.info.sequence_type {
             LedSequenceType::Color => {
-                Self::from_color_lerp(fade_from, &points.color_points[0])
+                Ok(Self::from_color_lerp(fade_from, &points.color_points[0]))
             }
             LedSequenceType::Gradient => {
                 let num_samples = (RESOLUTION * points.info.duration) as usize;
@@ -222,7 +219,7 @@ impl LedSequence {
                     Self::from_color_lerp(fade_from, &sequence.colors[0]);
                 let fade_len = initial_fade.colors.len();
 
-                initial_fade.chain(sequence).with_repeat_start(fade_len)
+                Ok(initial_fade.chain(sequence).with_repeat_start(fade_len))
             }
         }
     }

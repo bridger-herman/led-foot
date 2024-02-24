@@ -1,16 +1,23 @@
 use std::path::Path;
 use std::thread::sleep;
 use std::time::{Duration, Instant};
+use std::iter::Iterator;
 
 use crate::color::Color;
 use crate::led_sequence::{LedSequence, RESOLUTION};
-use crate::serial_manager::SerialManager;
-use crate::led_state::{LED_CONFIG, LED_STATE};
+use crate::led_state::{LED_CONFIG, LED_STATE, SERIAL_MANAGER};
 
 /// Controls the RGBW LEDs.
 pub struct LedSystem {
-    serial_manager: SerialManager,
     sequence_thread: std::thread::JoinHandle<()>,
+}
+
+struct LedSystemStatus {
+    pub index: usize,
+    pub start_time: Instant,
+    pub previous_time: Instant,
+    pub current_time: Instant,
+    pub total_error: Duration,
 }
 
 /// This impl is responsible for actually controlling the LEDs and room relays,
@@ -19,13 +26,10 @@ pub struct LedSystem {
 impl LedSystem {
        pub fn new() -> Self {
         // Initialize the serial manager (needs to send/receive initialing message)
-        let mut mgr = SerialManager::new(&LED_CONFIG.get().tty_name);
-        mgr.setup().expect("Unable to set up Serial Manager");
 
         let t = std::thread::spawn(|| LedSystem::led_sequence_worker());
 
         Self {
-            serial_manager: mgr,
             sequence_thread: t,
         }
     }
@@ -44,9 +48,54 @@ impl LedSystem {
     }
 
     fn led_sequence_worker() {
+        let mut status = LedSystemStatus {
+            index: 0,
+            start_time: Instant::now(),
+            previous_time: Instant::now(),
+            current_time: Instant::now(),
+            total_error: Duration::from_millis(0),
+        };
         loop {
-            if let Ok(state) = LED_STATE.get().read() {
-                debug!("current state: {:#?}", &state);
+            if let Ok(ref mut state) = LED_STATE.get().write() {
+                if let Some(ref mut seq) = state.current_sequence.as_mut() {
+                    if let Some(color) = seq.next() {
+                        let diff = status.current_time - status.previous_time;
+                        let delay = Duration::from_millis((1000.0 / RESOLUTION) as u64);
+                        let error = diff.checked_sub(delay).unwrap_or_default();
+                        status.total_error += error;
+
+                        let sleep_duration =
+                            delay.checked_sub(status.total_error).unwrap_or_default();
+                        trace!(
+                            "Sleeping for {:?} (total error {:?})",
+                            sleep_duration,
+                            status.total_error
+                        );
+                        sleep(sleep_duration);
+                        state.current_color = color;
+
+                        trace!(
+                            "Iteration {} - {}, {}, {}, {} ({:?})",
+                            status.index,
+                            state.current_color.r,
+                            state.current_color.g,
+                            state.current_color.b,
+                            state.current_color.w,
+                            delay,
+                        );
+
+                        if let Ok(mut ser) = SERIAL_MANAGER.get().write() {
+                            ser.send_color(&state.current_color);
+                        }
+
+                        status.previous_time = status.current_time;
+                        status.current_time = Instant::now();
+                        trace!("Time: {:?}", status.start_time.elapsed());
+                    } else {
+
+                    }
+
+                }
 
                 if state.shutdown {
                     break;
@@ -54,7 +103,8 @@ impl LedSystem {
             } else {
                 break;
             }
-            std::thread::sleep(std::time::Duration::from_millis(1000));
+            // TODO: this is spin-waiting and wasteful
+            // std::thread::sleep(std::time::Duration::from_millis(1000));
         }
     } 
 }
