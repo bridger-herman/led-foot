@@ -22,7 +22,7 @@ const UPDATE_BYTES: usize = 9;
 const CONFIRMATION_BYTES: usize = 3;
 
 // Defaults for serial mockup
-const DEFAULT_MOCKUP_SPAN: usize = 30;
+const DEFAULT_MOCKUP_SPAN: usize = 1;
 
 pub struct SerialManager {
     pub serial: Option<SystemPort>,

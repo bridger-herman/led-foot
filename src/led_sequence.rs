@@ -3,12 +3,12 @@ use std::fs::File;
 use std::io::Read;
 use std::path::Path;
 
-use serde_derive::{Serialize, Deserialize};
+use serde_derive::{Deserialize, Serialize};
 
 use crate::color::Color;
 
 /// 30 "frames" per second for smoothness
-pub const RESOLUTION: f32 = 2.0;
+pub const RESOLUTION: f32 = 30.0;
 
 /// How long the initial fade between sequences should be
 const FADE_DURATION: f32 = 0.5;
@@ -133,9 +133,8 @@ impl LedSequence {
         let width = reader.info().width;
         let height = reader.info().height;
 
-        let first_white_index = 3
-            * width as usize
-            * (height as usize / 2) as usize;
+        let first_white_index =
+            3 * width as usize * (height as usize / 2) as usize;
 
         match info.sequence_type {
             LedSequenceType::Color => {
@@ -145,8 +144,7 @@ impl LedSequence {
                 Self::from_color_lerp(fade_from, &first_color)
             }
             LedSequenceType::Gradient => {
-                let mut colors =
-                    VecDeque::with_capacity(width as usize);
+                let mut colors = VecDeque::with_capacity(width as usize);
                 for i in (0..(width as usize * 3)).step_by(3) {
                     let raw_color = [
                         buf[i],
@@ -176,7 +174,10 @@ impl LedSequence {
         }
     }
 
-    pub fn from_color_points(fade_from: &Color, points_path: &Path) -> Result<Self, std::io::Error> {
+    pub fn from_color_points(
+        fade_from: &Color,
+        points_path: &Path,
+    ) -> Result<Self, std::io::Error> {
         let mut file = File::open(points_path)?;
         let mut contents = String::new();
         file.read_to_string(&mut contents)?;
