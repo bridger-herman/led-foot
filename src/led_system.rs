@@ -37,12 +37,14 @@ impl LedSystemStatus {
 /// and nothing else. It runs on a separate thread, which loops and sends data
 /// to the serial USB if there's a sequence running, otherwise it will spin.
 impl LedSystem {
+    /// Create a new LedSystem instance. Should be a ~singleton.
     pub fn new() -> Self {
         let t = std::thread::spawn(|| LedSystem::led_sequence_worker());
 
         Self { sequence_thread: t }
     }
 
+    /// Shut down this LedSystem instance and wait for the sequence worker thread to join.
     pub fn shutdown(self) -> Result<(), &'static str> {
         debug!("Shutting down LED system...");
         if let Ok(mut state) = LED_STATE.get().write() {
@@ -68,7 +70,7 @@ impl LedSystem {
                             status.reinitialize();
                         }
 
-                        debug!(
+                        trace!(
                             "Iteration {} - {}, {}, {}, {}",
                             status.index,
                             state.current_color.r,
@@ -116,12 +118,12 @@ impl LedSystem {
 
             let sleep_duration =
                 delay.checked_sub(status.total_error).unwrap_or_default();
-            debug!(
+            trace!(
                 "Sleeping for {:?} (total error {:?})",
                 sleep_duration, status.total_error
             );
             std::thread::sleep(sleep_duration);
-            debug!("Time: {:?}", status.start_time.elapsed());
+            trace!("Time: {:?}", status.start_time.elapsed());
         }
     }
 }

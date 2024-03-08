@@ -57,6 +57,7 @@ async fn get_color() -> HttpResponse {
 }
 
 async fn set_color(payload: web::Json<Color>) -> HttpResponse {
+    debug!("Color: {:?}", payload);
     if let Ok(mut led_state) = LED_STATE.get().write() {
         // does not directly set color - smoothly interpolates to the color.
         let seq_with_transition = LedSequence::from_color_lerp(
@@ -137,6 +138,11 @@ async fn set_rooms(payload: web::Json<Rooms>) -> HttpResponse {
     }
 }
 
+async fn base_api() -> HttpResponse {
+    HttpResponse::Ok()
+        .content_type(ContentType::plaintext())
+        .body("API for Led Foot")
+}
 
 #[get("/")]
 async fn index() -> HttpResponse {
@@ -175,6 +181,7 @@ async fn main() -> std::io::Result<()> {
             // index.html
             .service(index)
             // The rest of the routes for controlling the LEDs
+            .route("/api", web::get().to(base_api))
             .route("/api/get-color", web::get().to(get_color))
             .route("/api/set-color", web::post().to(set_color))
             .route("/api/get-sequence", web::get().to(get_sequence))

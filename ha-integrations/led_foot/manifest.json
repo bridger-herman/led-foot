@@ -1,0 +1,15 @@
+{
+  "domain": "led_foot",
+  "name": "LED Foot",
+  "codeowners": [
+    "@bridger-herman"
+  ],
+  "config_flow": true,
+  "dependencies": [],
+  "documentation": "https://www.home-assistant.io/integrations/led_foot",
+  "homekit": {},
+  "iot_class": "local_polling",
+  "requirements": [],
+  "ssdp": [],
+  "zeroconf": []
+}
