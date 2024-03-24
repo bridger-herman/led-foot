@@ -18,6 +18,7 @@ use actix_web::http::header::ContentType;
 use actix_web::{
     get, middleware, web, App, HttpResponse, HttpServer,
 };
+use led_state::LedState;
 
 use crate::color::Color;
 use crate::led_sequence::LedSequence;
@@ -45,6 +46,7 @@ use crate::rooms::Rooms;
 // /api/set-rooms
 
 
+/// Retrieve the current color that the LEDs are on
 async fn get_color() -> HttpResponse {
     if let Ok(led_state) = LED_STATE.get().read() {
         HttpResponse::Ok()
@@ -56,6 +58,31 @@ async fn get_color() -> HttpResponse {
     }
 }
 
+/// Retrieve the color that the LEDs WILL on when a transition-in-progress is complete
+async fn get_color_future() -> HttpResponse {
+    if let Ok(led_state) = LED_STATE.get().read() {
+        // Default to the current color and hope for the best
+        let mut send_color = led_state.current_color.clone();
+
+        // If it's a transition / one-off sequence, use the last element instead
+        if let Some(ref seq) = led_state.current_sequence {
+            if !seq.info.repeat {
+                if let Some(col) = seq.colors.back() {
+                    send_color = col.clone();
+                }
+            }
+        }
+
+        HttpResponse::Ok()
+            .content_type(ContentType::json())
+            .json(send_color)
+    } else {
+        error!("Error on /api/get-color: can't get lock on state");
+        HttpResponse::InternalServerError().into()
+    }
+}
+
+/// Set the RGBW color for the LEDs and automatically begin a sequence w/transition
 async fn set_color(payload: web::Json<Color>) -> HttpResponse {
     debug!("Color: {:?}", payload);
     if let Ok(mut led_state) = LED_STATE.get().write() {
@@ -183,6 +210,7 @@ async fn main() -> std::io::Result<()> {
             // The rest of the routes for controlling the LEDs
             .route("/api", web::get().to(base_api))
             .route("/api/get-color", web::get().to(get_color))
+            .route("/api/get-color-future", web::get().to(get_color_future))
             .route("/api/set-color", web::post().to(set_color))
             .route("/api/get-sequence", web::get().to(get_sequence))
             .route("/api/set-sequence", web::post().to(set_sequence))

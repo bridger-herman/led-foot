@@ -5,11 +5,13 @@ import json
 import requests
 
 LED_FOOT_SERVER_API = 'http://localhost:5000/api/'
-DEFAULT_COLOR = (0, 0, 0, 0)
+DEFAULT_OFF_COLOR = (0, 0, 0, 0)
+DEFAULT_ON_COLOR = (255, 75, 0, 255)
+
 
 class LedFootState:
     def __init__(self):
-        self.current_rgbw = DEFAULT_COLOR
+        self.current_rgbw = DEFAULT_OFF_COLOR
         self.current_sequence = None
 
     def pull(self):
@@ -29,12 +31,14 @@ class LedFootState:
 
 
 def get_rgbw():
-    rgbw = requests.get(LED_FOOT_SERVER_API + 'get-color')
+    # use get-color-future because HASS performs an update() immediately after
+    # changing state, and the LED Foot is still in a transition then.
+    rgbw = requests.get(LED_FOOT_SERVER_API + 'get-color-future')
     if rgbw.status_code == 200:
         color = rgbw.json()
         return color_dict_to_tuple(color)
     else:
-        return DEFAULT_COLOR
+        return DEFAULT_OFF_COLOR
 
 
 def set_rgbw(r: float, g: float, b: float, w: float):
@@ -53,14 +57,14 @@ def set_sequence(seq_name: str):
 
 
 def color_tuple_to_dict(color: tuple) -> dict:
-    ''' Convert a tuple (R, G, B, W) to a dictionary '''
+    ''' Convert a HASS tuple (R, G, B, W [0-255]) to a dictionary {r: g: b: w: [0-1]}'''
     return {
-        'r': color[0],
-        'g': color[1],
-        'b': color[2],
-        'w': color[3],
+        'r': color[0] / 255,
+        'g': color[1] / 255,
+        'b': color[2] / 255,
+        'w': color[3] / 255,
     }
 
 def color_dict_to_tuple(color: dict) -> tuple:
-    ''' Convert a dictionary color to a tuple (R, G, B, W) '''
-    return (color['r'], color['g'], color['b'], color['w'])
+    ''' Convert a dictionary color {r: g: b: w: [0-1]} to a tuple (R, G, B, W [0-255]) '''
+    return (round(color['r'] * 255), round(color['g'] * 255), round(color['b'] * 255), round(color['w'] * 255))

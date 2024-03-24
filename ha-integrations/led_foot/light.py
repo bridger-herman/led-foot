@@ -34,15 +34,12 @@ async def async_setup_entry(
     entry: ConfigEntry,
     async_add_entities: AddEntitiesCallback,
 ) -> None:
-    """Set up the light platform for LEDBLE."""
+    """Set up the light platform for LED Foot."""
     async_add_entities([LedFoot()])
 
 
 class LedFoot(LightEntity):
-    """Representation of an Awesome Light."""
-
     def __init__(self) -> None:
-        """Initialize an AwesomeLight."""
         self._name = "Led Foot"
         self._state = led_foot.LedFootState()
 
@@ -52,7 +49,7 @@ class LedFoot(LightEntity):
 
     @property
     def supported_color_modes(self) -> set[ColorMode] | None:
-        return set(ColorMode.RGBW)
+        return {ColorMode.BRIGHTNESS, ColorMode.ONOFF, ColorMode.RGBW}
 
     @property
     def color_mode(self) -> ColorMode | None:
@@ -63,23 +60,29 @@ class LedFoot(LightEntity):
         return sum(self._state.current_rgbw) > 0
 
     @property
-    def brightness(self) -> int | None:
-        return 1
+    def unique_id(self) -> str:
+        return 'light.led_foot'
 
     @property
-    def hs_color(self) -> tuple[float, float] | None:
-        return (0.5, 0.5)
+    def brightness(self) -> int | None:
+        r, g, b, w = self._state.current_rgbw
+        return round(((0.2126*r + 0.7152*g + 0.0722*b) + w) / 2.0)
 
     @property
     def rgbw_color(self) -> tuple[int, int, int, int] | None:
         return self._state.current_rgbw
 
-    def turn_on(self) -> None:
-        self._state.current_rgbw = (1, 1, 1, 1)
+    def turn_on(self, rgbw_color=None, brightness=None, **kwargs) -> None:
+        if rgbw_color is None and brightness is None:
+            self._state.current_rgbw = led_foot.DEFAULT_ON_COLOR
+        elif rgbw_color is None:
+            self._state.current_rgbw = tuple([brightness] * 4)
+        else:
+            self._state.current_rgbw = rgbw_color
         self._state.push()
 
-    def turn_off(self) -> None:
-        self._state.current_rgbw = (0, 0, 0, 0)
+    def turn_off(self, **kwargs) -> None:
+        self._state.current_rgbw = led_foot.DEFAULT_OFF_COLOR
         self._state.push()
 
     def update(self) -> None:
