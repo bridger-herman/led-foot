@@ -17,7 +17,7 @@ pub static LED_ACTIVE: InitCell<(Mutex<bool>, Condvar)> = InitCell::new();
 /// Communication with serial device
 pub static SERIAL_MANAGER: InitCell<RwLock<SerialManager>> = InitCell::new();
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Default)]
 pub struct LedState {
     /// Current color that the LEDs are
     pub current_color: Color,

@@ -18,7 +18,6 @@ use actix_web::http::header::ContentType;
 use actix_web::{
     get, middleware, web, App, HttpResponse, HttpServer,
 };
-use led_state::LedState;
 
 use crate::color::Color;
 use crate::led_sequence::LedSequence;
@@ -102,6 +101,7 @@ async fn set_color(payload: web::Json<Color>) -> HttpResponse {
     }
 }
 
+/// Get the sequence that is currently running
 async fn get_sequence() -> HttpResponse {
     if let Ok(led_state) = LED_STATE.get().read() {
         let current_sequence_name = led_state.current_sequence.clone().map_or(None, |s| Some(s.info.name));
@@ -114,6 +114,7 @@ async fn get_sequence() -> HttpResponse {
     }
 }
 
+/// Switch to a new sequence
 async fn set_sequence(payload: String) -> HttpResponse {
     if let Ok(ref mut led_state) = LED_STATE.get().write() {
         let seq_path = payload.replace("png", "json");
@@ -142,6 +143,7 @@ async fn set_sequence(payload: String) -> HttpResponse {
     }
 }
 
+/// Get the rooms that are currently enabled
 async fn get_rooms() -> HttpResponse {
     if let Ok(led_state) = LED_STATE.get().read() {
         HttpResponse::Ok()
@@ -153,6 +155,7 @@ async fn get_rooms() -> HttpResponse {
     }
 }
 
+/// Set the rooms that are currently enabled
 async fn set_rooms(payload: web::Json<Rooms>) -> HttpResponse {
     if let Ok(mut led_state) = LED_STATE.get().write() {
         led_state.current_rooms = payload.clone();
@@ -165,12 +168,14 @@ async fn set_rooms(payload: web::Json<Rooms>) -> HttpResponse {
     }
 }
 
+/// Unused base API URL for LED Foot
 async fn base_api() -> HttpResponse {
     HttpResponse::Ok()
         .content_type(ContentType::plaintext())
         .body("API for Led Foot")
 }
 
+/// index.html
 #[get("/")]
 async fn index() -> HttpResponse {
     HttpResponse::Ok()

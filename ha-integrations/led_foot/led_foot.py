@@ -7,53 +7,73 @@ import requests
 LED_FOOT_SERVER_API = 'http://localhost:5000/api/'
 DEFAULT_OFF_COLOR = (0, 0, 0, 0)
 DEFAULT_ON_COLOR = (255, 75, 0, 255)
+DEFAULT_ROOMS = ['living_room', 'office', 'bedroom']
+DEFAULT_ROOM_STATE = True
 
-
-class LedFootState:
+class LedFootApi:
     def __init__(self):
         self.current_rgbw = DEFAULT_OFF_COLOR
-        self.current_sequence = None
+        self.rooms = {r: DEFAULT_ROOM_STATE for r in DEFAULT_ROOMS}
 
-    def pull(self):
-        self.current_rgbw = get_rgbw()
-        self.current_sequence = get_sequence()
+    def pull_state(self):
+        self.current_rgbw = LedFootApi.get_rgbw()
+        self.rooms = LedFootApi.get_rooms()
 
-    def push(self):
-        set_rgbw(*self.current_rgbw)
-        set_sequence(self.current_sequence)
+    def push_rgbw(self):
+        LedFootApi.set_rgbw(*self.current_rgbw)
 
-    # async def check_connection(self):
-    #     '''check connection to Led Foot server'''
-    #     resp = requests.get(LED_FOOT_SERVER_API)
-    #     if resp.status_code != 200:
-    #         raise Exception('Unable to connect to Led Foot server API: ' + resp.text)
+    def push_rooms(self):
+        LedFootApi.set_rooms(self.rooms)
 
-
-
-def get_rgbw():
-    # use get-color-future because HASS performs an update() immediately after
-    # changing state, and the LED Foot is still in a transition then.
-    rgbw = requests.get(LED_FOOT_SERVER_API + 'get-color-future')
-    if rgbw.status_code == 200:
-        color = rgbw.json()
-        return color_dict_to_tuple(color)
-    else:
-        return DEFAULT_OFF_COLOR
+    def check_connection() -> bool:
+        '''check connection to Led Foot server'''
+        resp = requests.get(LED_FOOT_SERVER_API)
+        if resp.status_code != 200:
+            raise Exception('Unable to connect to Led Foot server API: ' + resp.text)
+        return True
 
 
-def set_rgbw(r: float, g: float, b: float, w: float):
-    color_json = json.dumps(color_tuple_to_dict((r, g, b, w)))
-    status = requests.post(
-        LED_FOOT_SERVER_API + 'set-color',
-        color_json,
-        headers={'Content-type': 'application/json'}
-    )
 
-def get_sequence():
-    pass
+    def get_rgbw():
+        # use get-color-future because HASS performs an update() immediately after
+        # changing state, and the LED Foot is still in a transition then.
+        rgbw = requests.get(LED_FOOT_SERVER_API + 'get-color-future')
+        if rgbw.status_code == 200:
+            color = rgbw.json()
+            return color_dict_to_tuple(color)
+        else:
+            return DEFAULT_OFF_COLOR
 
-def set_sequence(seq_name: str):
-    pass
+
+    def set_rgbw(r: float, g: float, b: float, w: float):
+        color_json = json.dumps(color_tuple_to_dict((r, g, b, w)))
+        status = requests.post(
+            LED_FOOT_SERVER_API + 'set-color',
+            color_json,
+            headers={'Content-type': 'application/json'}
+        )
+
+    def get_rooms() -> dict:
+        rooms = requests.get(LED_FOOT_SERVER_API + 'get-rooms')
+        if rooms.status_code == 200:
+            return rooms.json()
+        else:
+            return {}
+
+
+    def set_rooms(current_rooms: dict):
+        rooms_json = json.dumps(current_rooms)
+        status = requests.post(
+            LED_FOOT_SERVER_API + 'set-rooms',
+            rooms_json,
+            headers={'Content-type': 'application/json'}
+        )
+
+    def get_sequence():
+        pass
+
+    def set_sequence(seq_name: str):
+        pass
 
 
 def color_tuple_to_dict(color: tuple) -> dict:

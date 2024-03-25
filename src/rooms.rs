@@ -9,7 +9,7 @@ pub enum Room {
 }
 
 /// Control which rooms are currently active
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
 pub struct Rooms {
     pub living_room: bool,
     pub office: bool,

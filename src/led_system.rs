@@ -2,7 +2,7 @@ use std::iter::Iterator;
 use std::time::{Duration, Instant};
 
 use crate::led_sequence::RESOLUTION;
-use crate::led_state::{LED_STATE, SERIAL_MANAGER};
+use crate::led_state::{LedState, LED_STATE, SERIAL_MANAGER};
 
 /// Controls the RGBW LEDs.
 pub struct LedSystem {
@@ -60,9 +60,18 @@ impl LedSystem {
     fn led_sequence_worker() {
         let delay = Duration::from_millis((1000.0 / RESOLUTION) as u64);
         let mut status = LedSystemStatus::new();
+        let mut last_state = LedState::default();
 
         loop {
             if let Ok(ref mut state) = LED_STATE.get().write() {
+                // Update the rooms (if changed)
+                if last_state.current_rooms != state.current_rooms {
+                    if let Ok(mut ser) = SERIAL_MANAGER.get().write() {
+                        ser.send_rooms(&state.current_rooms);
+                    }
+                }
+
+                // Update the sequence & current color, if it exists
                 if let Some(ref mut seq) = state.current_sequence.as_mut() {
                     if let Some(color) = seq.next() {
                         // starting a new sequence
@@ -112,6 +121,8 @@ impl LedSystem {
                     debug!("Shutting down / exiting LED spin");
                     break;
                 }
+
+                last_state = state.clone();
             } else {
                 break;
             }
