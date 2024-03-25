@@ -16,6 +16,9 @@ const FADE_DURATION: f32 = 0.5;
 /// Median filter size for initial
 const MEDIAN_FILTER_SIZE: usize = 51;
 
+/// Folder where all LED sequences are located
+pub const SEQUENCE_PATH: &str = "led-foot-sequences";
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum LedSequenceType {
     Color,

@@ -14,13 +14,20 @@ class LedFootApi:
     def __init__(self):
         self.current_rgbw = DEFAULT_OFF_COLOR
         self.rooms = {r: DEFAULT_ROOM_STATE for r in DEFAULT_ROOMS}
+        self.sequence_list = []
+        self.current_sequence = None
 
     def pull_state(self):
         self.current_rgbw = LedFootApi.get_rgbw()
         self.rooms = LedFootApi.get_rooms()
+        self.sequence_list = LedFootApi.list_sequences()
+        self.current_sequence = LedFootApi.get_sequence()
 
     def push_rgbw(self):
         LedFootApi.set_rgbw(*self.current_rgbw)
+
+    def push_sequence(self):
+        LedFootApi.set_sequence(self.current_sequence)
 
     def push_rooms(self):
         LedFootApi.set_rooms(self.rooms)
@@ -69,11 +76,26 @@ class LedFootApi:
             headers={'Content-type': 'application/json'}
         )
 
-    def get_sequence():
-        pass
+
+    def list_sequences() -> list[str]:
+        resp = requests.get(LED_FOOT_SERVER_API + 'list-sequences')
+        if resp.status_code == 200:
+            return resp.text.split('\n')
+        else:
+            return []
+
+    def get_sequence() -> str | None:
+        resp = requests.get(LED_FOOT_SERVER_API + 'get-sequence')
+        if resp.status_code == 200:
+            return resp.text
+        else:
+            return None
 
     def set_sequence(seq_name: str):
-        pass
+        status = requests.post(
+            LED_FOOT_SERVER_API + 'set-sequence',
+            seq_name
+        )
 
 
 def color_tuple_to_dict(color: tuple) -> dict:

@@ -18,6 +18,8 @@
     <button id="set-sequence">Set Sequence!</button>
     <button id="get-sequence">Get Sequence!</button>
 
+    <pre id="sequence-list"></pre>
+
     <hr>
     <input type="checkbox" name="" id="living-room">
     <input type="checkbox" name="" id="bedroom">
@@ -30,6 +32,7 @@
         const ButtonSetColor = document.getElementById('set-color');
         const ButtonGetSequence = document.getElementById('get-sequence');
         const ButtonSetSequence = document.getElementById('set-sequence');
+        const ParSequenceList = document.getElementById('sequence-list');
         const ButtonGetRooms = document.getElementById('get-rooms');
         const ButtonSetRooms = document.getElementById('set-rooms');
 
@@ -102,6 +105,14 @@
             });
         });
 
+        window.onload = () => {
+            fetch('/api/list-sequences')
+                .then(resp => resp.text())
+                .then((t) => {
+                    console.log('fetched sequences');
+                    ParSequenceList.innerHTML = t;
+                });
+        }
 
     </script>
 </body>

@@ -21,12 +21,10 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     # TODO 2. Validate the API connection (and authentication)
     # TODO 3. Store an API object for your platforms to access
     api = led_foot.LedFootApi()
-    try:
-        await hass.async_add_executor_job(api.pull_state)
-    except:
-        return False
-    else:
-        hass.data[DOMAIN][entry.entry_id] = api
+
+    await hass.async_add_executor_job(api.pull_state)
+
+    hass.data[DOMAIN][entry.entry_id] = api
 
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
 

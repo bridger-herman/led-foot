@@ -143,6 +143,26 @@ async fn set_sequence(payload: String) -> HttpResponse {
     }
 }
 
+
+async fn list_sequences() -> HttpResponse {
+    if let Ok(paths) = std::fs::read_dir(led_sequence::SEQUENCE_PATH) {
+
+        let sequences_list = paths
+            .filter_map(|e| e.ok())
+            .map(|p| p.path().to_string_lossy().into_owned())
+            .filter(|p| p.ends_with(".png"))
+            .collect::<Vec<_>>();
+
+        HttpResponse::Ok()
+            .content_type(ContentType::plaintext())
+            .body(sequences_list.join("\n"))
+    } else {
+        error!("Error on /api/list-sequences: can't read directory {}", led_sequence::SEQUENCE_PATH);
+        HttpResponse::InternalServerError().into()
+    }
+}
+
+
 /// Get the rooms that are currently enabled
 async fn get_rooms() -> HttpResponse {
     if let Ok(led_state) = LED_STATE.get().read() {
@@ -205,7 +225,7 @@ async fn main() -> std::io::Result<()> {
             .wrap(middleware::Logger::default())
             // Serve sequences as static files (allow to see file list if user wants)
             .service(
-                Files::new("/led-foot-sequences", "led-foot-sequences")
+                Files::new("/led-foot-sequences", led_sequence::SEQUENCE_PATH)
                     .show_files_listing(),
             )
             // Serve the rest of the static files
@@ -219,6 +239,7 @@ async fn main() -> std::io::Result<()> {
             .route("/api/set-color", web::post().to(set_color))
             .route("/api/get-sequence", web::get().to(get_sequence))
             .route("/api/set-sequence", web::post().to(set_sequence))
+            .route("/api/list-sequences", web::get().to(list_sequences))
             .route("/api/get-rooms", web::get().to(get_rooms))
             .route("/api/set-rooms", web::post().to(set_rooms))
     })

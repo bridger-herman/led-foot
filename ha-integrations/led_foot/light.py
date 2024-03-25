@@ -8,8 +8,7 @@ from .const import DOMAIN
 import homeassistant.components.led_foot.led_foot as led_foot
 
 # Import the device class from the component that you want to support
-from homeassistant.components.light import (ATTR_BRIGHTNESS, PLATFORM_SCHEMA,
-                                            LightEntity)
+from homeassistant.components.light import LightEntity, LightEntityFeature
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
@@ -45,6 +44,10 @@ class LedFootRgbw(LightEntity):
         return {ColorMode.BRIGHTNESS, ColorMode.ONOFF, ColorMode.RGBW}
 
     @property
+    def supported_features(self) -> LightEntityFeature:
+        return LightEntityFeature.EFFECT
+
+    @property
     def color_mode(self) -> ColorMode | None:
         return ColorMode.RGBW
 
@@ -61,18 +64,35 @@ class LedFootRgbw(LightEntity):
     def rgbw_color(self) -> tuple[int, int, int, int] | None:
         return self._api.current_rgbw
 
-    def turn_on(self, rgbw_color=None, brightness=None, **kwargs) -> None:
-        if rgbw_color is None and brightness is None:
-            self._api.current_rgbw = led_foot.DEFAULT_ON_COLOR
-        elif rgbw_color is None:
-            self._api.current_rgbw = tuple([brightness] * 4)
+    @property
+    def effect(self) -> str | None:
+        return self._api.current_sequence or 'None'
+
+    @property
+    def effect_list(self) -> list[str] | None:
+        return self._api.sequence_list
+
+    def turn_on(self, rgbw_color=None, brightness=None, effect=None, **kwargs) -> None:
+        if effect is None:
+            if rgbw_color is None and brightness is None:
+                self._api.current_rgbw = led_foot.DEFAULT_ON_COLOR
+            elif rgbw_color is None:
+                self._api.current_rgbw = tuple([brightness] * 4)
+            else:
+                self._api.current_rgbw = rgbw_color
+
+            self._api.current_sequence = None
+            self._api.push_sequence()
+            self._api.push_rgbw()
         else:
-            self._api.current_rgbw = rgbw_color
-        self._api.push_rgbw()
+            self._api.current_sequence = effect
+            self._api.push_sequence()
 
     def turn_off(self, **kwargs) -> None:
         self._api.current_rgbw = led_foot.DEFAULT_OFF_COLOR
+        self._api.current_sequence = None
         self._api.push_rgbw()
+        self._api.push_sequence()
 
     def update(self) -> None:
         """Fetch new state data for this light.
