@@ -1,16 +1,126 @@
 # LED automation
-RGB+White LEDs controlled by a Raspberry Pi (Zero W) and an Arduino (Mega 2560)
+RGB+White LEDs controlled by an Arduino (Mega 2560), and a web server that integrates with [Home Assistant](https://homeassistant.io)
 
 Server is written in Rust, using the Actix framework.
 
-## Cross-Compilation Setup
+## Installation
 
-Tested on Arch Linux, with the Raspberry Pi Zero W as a target
+0. Download and install dependencies:
+- Rust Compiler: follow the instructions on <https://rustup.rs>
 
-### Setup
+1. Clone this repo to a location of your choice
+
+```
+git clone https://github.com/bridger-herman/led-foot.git
+```
+
+2. Build the project (release mode, optimized)
+
+```
+cd led-foot
+cargo build --release
+```
+
+3. Test and make sure the project runs correctly (optionally, add `-v` flags for
+more verbosity, `-v` = INFO, `-v -v`  = DEBUG, `-v -v -v` = TRACE)
+
+```
+cargo run --release
+cargo run --release -- -v
+```
+
+4.  (optional) to run on startup, install the `systemd` service. NOTE, you may
+need to adjust the `led-foot.service` file for your setup (paths are hardcoded)
+
+```
+sudo cp ./systemd/led-foot.service /etc/systemd/system
+sudo systemctl enable led-foot.service
+```
+
+---
+
+Everything below here is all deprecated now that we're just running this on a regular x86_64 server.
+
+## Part 1: Set up cross compiler for the target
+
+Tested on Ubuntu 22.04, with the Raspberry Pi Zero W as a target (Arm v6 architecture with hardware floating point).
+
+Run the following commands
+
 - `sudo apt install libssl-dev` (for build on regular x86_64)
-
+- `sudo apt install gcc-arm-linux-gnueabihf`
 - `rustup target add arm-unknown-linux-gnueabihf`
+
+
+## Part 2: Set up Cargo/Rust config
+
+Add the following to your local `$HOME/.cargo/config`:
+
+```
+[target.arm-unknown-linux-gnueabihf]
+linker = "arm-linux-gnueabihf-gcc"
+```
+
+
+## Part 3: Build the project for the other target
+
+
+Build the project and link it (note, this may use the wrong version of `glibc`...)
+```
+cargo build --target arm-unknown-linux-gnueabihf --release
+```
+
+Then tar up the necessary files (zip up everything that should be copied over to the target machine)
+
+```
+rm -rf /tmp/led-foot /tmp/led-foot.tar.gz
+mkdir -p /tmp/led-foot
+
+cp -r led-foot-sequences index.html reinitialize_serial.py static systemd target/arm-unknown-linux-gnueabihf/release/led-foot /tmp/led-foot
+
+cd /tmp
+tar -czvf /tmp/led-foot.tar.gz ./led-foot
+cd -
+```
+
+
+Finally, send the tarball to the target machine:
+
+```
+scp /tmp/led-foot.tar.gz pi@<the IP address>:~/
+```
+
+
+## Part 4: Setup on the target system
+
+
+Stop the LED Foot service and make a backup of the old code that's running
+
+```
+sudo systemctl stop led-foot
+mv led-foot led-foot.bak.<date>
+```
+
+Untar the new files
+
+```
+tar -xzvf led-foot.tar.gz
+```
+
+Restart the LED Foot systemd service and check running status
+
+```
+sudo systemctl start led-foot
+sudo systemctl status led-foot
+```
+
+
+
+
+
+### Below this is old news
+
+retaining in case stuff changes in the future and we need to build from source again...
 
 - A version of the `arm-linux-gnueabihf-gcc` compiler
   - This can be found inside in the [Raspberry Pi Tools
@@ -54,15 +164,6 @@ These can be found inside a [crosstool-ng](http://crosstool-ng.github.io/)
 install, or in the [Raspberry Pi Tools
 Repository](https://github.com/raspberrypi/tools)
 
-
-## Rust configuration
-
-Add the following to your local `$HOME/.cargo/config`:
-
-```
-[target.arm-unknown-linux-gnueabihf]
-linker = "arm-linux-gnueabihf-gcc"
-```
 
 ## Rust compilation
 
