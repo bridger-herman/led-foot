@@ -34,17 +34,23 @@ pub struct SerialManager {
 impl SerialManager {
     pub fn new(tty_name: &str) -> Self {
         let opened = serial::open(tty_name);
-        let serial = if let Ok(mut ser) = opened {
-            ser.set_timeout(Duration::from_secs(2)).unwrap();
-            warn!("Using serial: {}", tty_name);
-            Some(ser)
-        } else {
-            warn!(
-                "Unable to initialize serial at {}. Using Serial Mockup.",
-                tty_name
-            );
-            None
+        let serial = match opened {
+            Ok(mut ser) => {
+                ser.set_timeout(Duration::from_secs(2)).unwrap();
+                warn!("Using serial: {}", tty_name);
+                Some(ser)
+            }
+            Err(err) => {
+                warn!(
+                    "Unable to initialize serial at {}. Using Serial Mockup. Error: {}",
+                    tty_name,
+                    err
+                );
+                None
+            }
         };
+        
+        
 
         let mut mgr = Self {
             serial,
