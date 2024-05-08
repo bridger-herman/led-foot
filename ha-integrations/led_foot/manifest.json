@@ -1,5 +1,6 @@
 {
   "domain": "led_foot",
+  "version": "0.0.1",
   "name": "LED Foot",
   "codeowners": [
     "@bridger-herman"

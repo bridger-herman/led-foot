@@ -4,7 +4,7 @@ import logging
 from typing import Any
 
 from .const import DOMAIN
-import homeassistant.components.led_foot.led_foot as led_foot
+from .led_foot import LedFootApi
 
 from homeassistant.components.switch import SwitchEntity
 from homeassistant.config_entries import ConfigEntry
@@ -17,7 +17,7 @@ async def async_setup_entry(
     async_add_entities: AddEntitiesCallback,
 ) -> None:
     """Set up the switch platform for LED Foot."""
-    led_foot_api: led_foot.LedFootApi = hass.data[DOMAIN][entry.entry_id]
+    led_foot_api: LedFootApi = hass.data[DOMAIN][entry.entry_id]
     async_add_entities([LedFootRoom(led_foot_api, r) for r in led_foot_api.rooms])
 
 class LedFootRoom(SwitchEntity):

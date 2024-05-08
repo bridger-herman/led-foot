@@ -6,7 +6,7 @@ from homeassistant.const import Platform
 from homeassistant.core import HomeAssistant
 
 from .const import DOMAIN
-import homeassistant.components.led_foot.led_foot as led_foot
+from .led_foot import LedFootApi
 
 # TODO List the platforms that you want to support.
 # For your initial PR, limit it to 1 platform.
@@ -20,7 +20,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     # TODO 1. Create API instance
     # TODO 2. Validate the API connection (and authentication)
     # TODO 3. Store an API object for your platforms to access
-    api = led_foot.LedFootApi()
+    api = LedFootApi()
 
     await hass.async_add_executor_job(api.pull_state)
 

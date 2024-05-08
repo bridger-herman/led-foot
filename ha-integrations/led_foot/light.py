@@ -5,7 +5,7 @@ import logging
 from typing import Any
 
 from .const import DOMAIN
-import homeassistant.components.led_foot.led_foot as led_foot
+from .led_foot import LedFootApi, DEFAULT_ON_COLOR, DEFAULT_OFF_COLOR
 
 # Import the device class from the component that you want to support
 from homeassistant.components.light import LightEntity, LightEntityFeature
@@ -27,9 +27,9 @@ async def async_setup_entry(
 
 
 class LedFootRgbw(LightEntity):
-    def __init__(self, led_foot_api: led_foot.LedFootApi) -> None:
+    def __init__(self, led_foot_api: LedFootApi) -> None:
         self._name: str = "Led Foot"
-        self._api: led_foot.LedFootApi = led_foot_api
+        self._api: LedFootApi = led_foot_api
 
     @property
     def name(self) -> str:
@@ -75,7 +75,7 @@ class LedFootRgbw(LightEntity):
     def turn_on(self, rgbw_color=None, brightness=None, effect=None, **kwargs) -> None:
         if effect is None:
             if rgbw_color is None and brightness is None:
-                self._api.current_rgbw = led_foot.DEFAULT_ON_COLOR
+                self._api.current_rgbw = DEFAULT_ON_COLOR
             elif rgbw_color is None:
                 self._api.current_rgbw = tuple([brightness] * 4)
             else:
@@ -89,7 +89,7 @@ class LedFootRgbw(LightEntity):
             self._api.push_sequence()
 
     def turn_off(self, **kwargs) -> None:
-        self._api.current_rgbw = led_foot.DEFAULT_OFF_COLOR
+        self._api.current_rgbw = DEFAULT_OFF_COLOR
         self._api.current_sequence = None
         self._api.push_rgbw()
         self._api.push_sequence()
