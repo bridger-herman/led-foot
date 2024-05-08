@@ -35,6 +35,10 @@ need to adjust the `led-foot.service` file for your setup (paths are hardcoded)
 ```
 sudo cp ./systemd/led-foot.service /etc/systemd/system
 sudo systemctl enable led-foot.service
+sudo systemctl start led-foot.service
+
+# to get log information if it failed, check
+sudo journalctl -u led-foot.service
 ```
 
 5. (optional) you may need to adjust the permissions of the Arduino connected
@@ -43,6 +47,13 @@ via USB (usually `/dev/ttyACM0` on Linux):
 ```
 sudo chmod a+rw /dev/ttyACM0
 ```
+
+6. (optional) set up with Home Assistant
+
+  1.  Copy the ha-integration to your home assistant custom components folder (e.g., in `<config folder>/custom_components/`).
+  2. In the Home Assistant GUI, add a new integration & search for "LED Foot"
+  3. Add the integration!
+  4. Check the log if anything goes wrong.
 
 ---
 
