@@ -270,13 +270,21 @@ mod tests {
 
     #[test]
     fn test_serial_connection() {
+        ::simple_logger::SimpleLogger::new()
+            .with_level(log::LevelFilter::Trace)
+            .init()
+            .expect("Unable to initialize log");
+
         let mut mgr = serial_manager::SerialManager::new("/dev/ttyACM0");
+        mgr.send_rooms(&Rooms { living_room: true, office: true, bedroom: true });
         let color_to_send: Color = Color::new(1.0, 1.0, 1.0, 1.0);
 
-        const N_TESTS: usize = 1000;
+        const N_TESTS: usize = 10000;
         for n in 0..N_TESTS {
-            println!("iteration {}", n);
+            let last = std::time::Instant::now();
             mgr.send_color(&color_to_send);
+            let next = std::time::Instant::now();
+            println!("iteration {}, elapsed {:?}", n, next - last);
         }
     }
 }

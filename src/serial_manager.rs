@@ -4,6 +4,7 @@ use std::io::{Error, ErrorKind, Read, Write};
 use std::time::Duration;
 
 use serial::{SerialPort, SystemPort};
+use serial::core::{SerialDevice, SerialPortSettings};
 
 use crate::color::Color;
 use crate::rooms::Rooms;
@@ -36,7 +37,13 @@ impl SerialManager {
         let opened = serial::open(tty_name);
         let serial = match opened {
             Ok(mut ser) => {
-                ser.set_timeout(Duration::from_secs(2)).unwrap();
+                SerialPort::set_timeout(&mut ser, Duration::from_secs(2)).unwrap();
+                let settings_result = ser.read_settings();
+                if let Ok(mut settings) = settings_result {
+                    settings.set_baud_rate(serial::BaudRate::Baud9600).expect("Unable to set serial baud rate");
+                    ser.write_settings(&settings).expect("Unable to write serial settings");
+                }
+
                 warn!("Using serial: {}", tty_name);
                 Some(ser)
             }
@@ -125,6 +132,7 @@ impl SerialManager {
                 [0; CONFIRMATION_BYTES];
             ser.read_exact(&mut read_buf)
                 .expect("Couldn't read confirmation");
+            trace!("received bytes: {:?}", read_buf);
 
             if read_buf != "C\r\n".as_bytes() {
                 error!(
@@ -167,6 +175,7 @@ impl SerialManager {
                 [0; CONFIRMATION_BYTES];
             ser.read_exact(&mut read_buf)
                 .expect("Couldn't read confirmation");
+            trace!("received bytes: {:?}", read_buf);
 
             if read_buf != "R\r\n".as_bytes() {
                 error!(
