@@ -48,7 +48,6 @@ pub fn init_global_state() {
 
     LED_ACTIVE.set((Mutex::new(false), Condvar::new()));
 
-    let mut mgr = SerialManager::new(&LED_CONFIG.get().tty_name);
-    mgr.setup().expect("Unable to set up Serial Manager");
+    let mgr = SerialManager::new(&LED_CONFIG.get().tty_name);
     SERIAL_MANAGER.set(RwLock::new(mgr));
 }

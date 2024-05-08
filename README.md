@@ -37,6 +37,13 @@ sudo cp ./systemd/led-foot.service /etc/systemd/system
 sudo systemctl enable led-foot.service
 ```
 
+5. (optional) you may need to adjust the permissions of the Arduino connected
+via USB (usually `/dev/ttyACM0` on Linux):
+
+```
+sudo chmod a+rw /dev/ttyACM0
+```
+
 ---
 
 Everything below here is all deprecated now that we're just running this on a regular x86_64 server.
