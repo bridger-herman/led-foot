@@ -262,3 +262,21 @@ async fn main() -> std::io::Result<()> {
             .map_err(|msg| std::io::Error::new(std::io::ErrorKind::Other, msg))
         })
 }
+
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_serial_connection() {
+        let mut mgr = serial_manager::SerialManager::new("/dev/ttyACM0");
+        let color_to_send: Color = Color::new(1.0, 1.0, 1.0, 1.0);
+
+        const N_TESTS: usize = 1000;
+        for n in 0..N_TESTS {
+            println!("iteration {}", n);
+            mgr.send_color(&color_to_send);
+        }
+    }
+}
