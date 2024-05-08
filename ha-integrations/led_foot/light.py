@@ -10,6 +10,7 @@ from .led_foot import LedFootApi, DEFAULT_ON_COLOR, DEFAULT_OFF_COLOR
 # Import the device class from the component that you want to support
 from homeassistant.components.light import LightEntity, LightEntityFeature
 from homeassistant.config_entries import ConfigEntry
+from homeassistant.helpers.device_registry import DeviceInfo
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.components.light import ColorMode
@@ -38,6 +39,19 @@ class LedFootRgbw(LightEntity):
     @property
     def unique_id(self) -> str:
         return 'light.led_foot.rgbw'
+
+    @property
+    def device_info(self) -> DeviceInfo:
+        """Return the device info."""
+        return DeviceInfo(
+            identifiers={
+                (DOMAIN, self.unique_id)
+            },
+            name=self.name,
+            manufacturer='Kind Digits',
+            model='LED Foot RGBW',
+            sw_version='0.0.1',
+        )
 
     @property
     def supported_color_modes(self) -> set[ColorMode] | None:

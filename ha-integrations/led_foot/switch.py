@@ -8,6 +8,7 @@ from .led_foot import LedFootApi
 
 from homeassistant.components.switch import SwitchEntity
 from homeassistant.config_entries import ConfigEntry
+from homeassistant.helpers.device_registry import DeviceInfo
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
@@ -21,7 +22,7 @@ async def async_setup_entry(
     async_add_entities([LedFootRoom(led_foot_api, r) for r in led_foot_api.rooms])
 
 class LedFootRoom(SwitchEntity):
-    def __init__(self, led_foot_api: led_foot.LedFootApi, room_id: str):
+    def __init__(self, led_foot_api: LedFootApi, room_id: str):
         self._name = 'Led Foot Room ' + room_id
         self._room_id = room_id
         self._api = led_foot_api
@@ -33,6 +34,19 @@ class LedFootRoom(SwitchEntity):
     @property
     def unique_id(self) -> str:
         return 'switch.led_foot.' + self._room_id
+
+    @property
+    def device_info(self) -> DeviceInfo:
+        """Return the device info."""
+        return DeviceInfo(
+            identifiers={
+                (DOMAIN, self.unique_id)
+            },
+            name=self.name,
+            manufacturer='Kind Digits',
+            model='LED Foot Switch',
+            sw_version='0.0.1',
+        )
 
     @property
     def is_on(self) -> bool:
