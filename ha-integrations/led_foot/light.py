@@ -74,6 +74,7 @@ class LedFootRgbw(LightEntity):
         r, g, b, w = self._api.current_rgbw
         return round(((0.2126*r + 0.7152*g + 0.0722*b) + w) / 2.0)
 
+
     @property
     def rgbw_color(self) -> tuple[int, int, int, int] | None:
         return self._api.current_rgbw
@@ -91,7 +92,9 @@ class LedFootRgbw(LightEntity):
             if rgbw_color is None and brightness is None:
                 self._api.current_rgbw = DEFAULT_ON_COLOR
             elif rgbw_color is None:
-                self._api.current_rgbw = tuple([brightness] * 4)
+                # if rgbw color isn't supplied but brightness is, assume setting brightness
+                scale_factor = brightness / self.brightness
+                self._api.current_rgbw = tuple([scale_factor * channel for channel in self._api.current_rgbw])
             else:
                 self._api.current_rgbw = rgbw_color
 
