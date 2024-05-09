@@ -11,7 +11,7 @@ use crate::color::Color;
 pub const RESOLUTION: f32 = 30.0;
 
 /// How long the initial fade between sequences should be
-const FADE_DURATION: f32 = 0.5;
+pub const FADE_DURATION: f32 = 0.5;
 
 /// Median filter size for initial
 const MEDIAN_FILTER_SIZE: usize = 51;
@@ -65,6 +65,29 @@ impl LedSequence {
             sequence_type: LedSequenceType::Color,
             name: "lerp".to_string(),
             duration: FADE_DURATION,
+            repeat: false,
+        };
+
+        sequence
+    }
+
+    /// Fade from a start color to black, over a duration
+    pub fn fade_to_black(start_color: &Color, duration: f32) -> Self {
+        let num_elements = (duration * RESOLUTION) as usize;
+        let end_color = Color::new(0.0, 0.0, 0.0, 0.0);
+        let mut colors = VecDeque::with_capacity(num_elements);
+
+        for i in 0..=(num_elements) {
+            let percent = i as f32 / (duration * RESOLUTION);
+            colors.push_back(start_color.lerp(&end_color, percent));
+        }
+
+        let mut sequence = Self::default();
+        sequence.colors = colors;
+        sequence.info = LedSequenceInfo {
+            sequence_type: LedSequenceType::Color,
+            name: "fade-to-black".to_string(),
+            duration,
             repeat: false,
         };
 

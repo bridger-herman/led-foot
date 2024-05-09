@@ -3,13 +3,11 @@ extern crate log;
 
 pub mod color;
 pub mod led_config;
-pub mod led_scheduler;
 pub mod led_sequence;
 pub mod led_state;
 pub mod led_system;
 pub mod rooms;
 pub mod serial_manager;
-pub mod wemo_manager;
 
 use std::path::Path;
 
@@ -23,16 +21,6 @@ use crate::color::Color;
 use crate::led_sequence::LedSequence;
 use crate::led_state::LED_STATE;
 use crate::rooms::Rooms;
-
-// #[post("/api/wemo")]
-// async fn wemo(
-//     payload: web::Json<HashMap<String, String>>,
-// ) -> Result<HttpResponse, Error> {
-//     for (wemo, cmd) in payload.iter() {
-//         WEMO_MANAGER.get().send_wemo_command(wemo, cmd);
-//     }
-//     Ok(HttpResponse::Ok().json("{}"))
-// }
 
 // API Endpoints:
 // /api/get-rgbw
@@ -117,14 +105,29 @@ async fn get_sequence() -> HttpResponse {
 /// Switch to a new sequence
 async fn set_sequence(payload: String) -> HttpResponse {
     if let Ok(ref mut led_state) = LED_STATE.get().write() {
-        let seq_path = payload.replace("png", "json");
-        debug!("Sequence path: {:?}", seq_path);
-        let seq_with_transition = LedSequence::from_color_points(
-            &led_state.current_color,
-            // TODO: Fix this on the javascript side (generate the colors from the
-            // json)
-            Path::new(&seq_path),
-        );
+        // TODO: This is hacky - check if the payload includes the magic phrase
+        let seq_with_transition = if payload.starts_with("fade-to-black-") {
+            let tokens = payload.split("-");
+            debug!("Parsed fade to black tokens {:?}", tokens);
+            let duration_result= tokens
+                .last()
+                .expect("Unable to get final token in payload string for /api/set-sequence")
+                .parse::<f32>();
+            if let Ok(duration) = duration_result {
+                Ok(LedSequence::fade_to_black(&led_state.current_color, duration))
+            } else {
+                Ok(LedSequence::fade_to_black(&led_state.current_color, crate::led_sequence::FADE_DURATION))
+            }
+        } else {
+            let seq_path = payload.replace("png", "json");
+            debug!("Sequence path: {:?}", seq_path);
+            LedSequence::from_color_points(
+                &led_state.current_color,
+                // TODO: Fix this on the javascript side (generate the colors from the
+                // json)
+                Path::new(&seq_path),
+            )
+        };
 
         if let Err(e) = seq_with_transition {
             return HttpResponse::BadRequest()
