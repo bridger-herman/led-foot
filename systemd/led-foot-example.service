@@ -9,6 +9,7 @@ After=network.target
 [Service]
 Type=simple
 User=yourusername
+Environment="RUST_LOG=info"
 WorkingDirectory=/home/yourusername/led-foot
 ExecStart=/home/yourusername/led-foot/led-foot
 Restart=on-failure

@@ -209,18 +209,8 @@ async fn index() -> HttpResponse {
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
     // Initialize logging
-    let log_level = ::std::env::args().filter(|item| item == "-v").count();
-    let log_level = match log_level {
-        1 => ::log::LevelFilter::Info,
-        2 => ::log::LevelFilter::Debug,
-        3 => ::log::LevelFilter::Trace,
-        _ => ::log::LevelFilter::Warn,
-    };
-    println!("Starting LED server with verbosity {:?}", log_level);
-    ::simple_logger::SimpleLogger::new()
-        .with_level(log_level)
-        .init()
-        .expect("Unable to initialize log");
+    ::env_logger::init();
+    println!("Starting LED server with log level {:?}", ::log::max_level());
 
     let server = HttpServer::new(|| {
         App::new()
@@ -273,11 +263,6 @@ mod tests {
 
     #[test]
     fn test_serial_connection() {
-        ::simple_logger::SimpleLogger::new()
-            .with_level(log::LevelFilter::Trace)
-            .init()
-            .expect("Unable to initialize log");
-
         let mut mgr = serial_manager::SerialManager::new("/dev/ttyACM0");
         mgr.send_rooms(&Rooms { living_room: true, office: true, bedroom: true });
         let color_to_send: Color = Color::new(1.0, 1.0, 1.0, 1.0);

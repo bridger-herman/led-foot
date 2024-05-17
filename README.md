@@ -21,12 +21,14 @@ cd led-foot
 cargo build --release
 ```
 
-3. Test and make sure the project runs correctly (optionally, add `-v` flags for
-more verbosity, `-v` = INFO, `-v -v`  = DEBUG, `-v -v -v` = TRACE)
+3. Test and make sure the project runs correctly. It can be a pain
+to have all of actix's log output in some of these cases, see the below code
+block for enabling ONLY LED Foot's output.
 
 ```
 cargo run --release
-cargo run --release -- -v
+RUST_LOG=debug cargo run --release
+RUST_LOG=none,led_foot=trace cargo run --release
 ```
 
 4.  (optional) to run on startup, install the `systemd` service. NOTE, you may
