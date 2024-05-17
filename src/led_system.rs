@@ -14,17 +14,20 @@ struct LedSystemStatus {
     pub start_time: Instant,
     pub previous_time: Instant,
     pub current_time: Instant,
-    pub total_error: Duration,
+    pub nominal_sleep_time: Duration,
+    pub actual_sleep_time: Duration,
 }
 
 impl LedSystemStatus {
     pub fn new() -> Self {
+        let sleep_time = Duration::from_millis((1000.0 / RESOLUTION) as u64);
         Self {
             index: 0,
             start_time: Instant::now(),
             current_time: Instant::now(),
             previous_time: Instant::now(),
-            total_error: Duration::from_millis(0),
+            nominal_sleep_time: sleep_time,
+            actual_sleep_time: sleep_time,
         }
     }
 
@@ -58,9 +61,10 @@ impl LedSystem {
     }
 
     fn led_sequence_worker() {
-        let delay = Duration::from_millis((1000.0 / RESOLUTION) as u64);
         let mut status = LedSystemStatus::new();
         let mut last_state = LedState::default();
+
+        trace!("Set up LED System with temporal resolution {}fps, nominal sleep time per frame = {:?}", RESOLUTION, status.nominal_sleep_time);
 
         loop {
             if let Ok(ref mut state) = LED_STATE.get().write() {
@@ -96,10 +100,27 @@ impl LedSystem {
                         // Update color in state
                         state.current_color = color;
 
-                        // Update timing errors
-                        let diff = status.current_time - status.previous_time;
-                        let error = diff.checked_sub(delay).unwrap_or_default();
-                        status.total_error += error;
+                        // Calculate how long to sleep based on timing errors.
+                        // Theorectially, we should be `index * delay` milleseconds along.
+                        // But, with timing errors (serial delay) this isn't always the case.
+                        // So, we correct for that here.
+                        let nominal_current_time = status.nominal_sleep_time.checked_mul((status.index) as u32).unwrap_or_default();
+                        let actual_current_time = status.start_time.elapsed();
+                        let over_time = actual_current_time.checked_sub(nominal_current_time);
+                        let under_time = nominal_current_time.checked_sub(actual_current_time);
+
+                        trace!(
+                            "Index {}, Nominal time {:?}, actual time {:?}, over time {:?}, under time {:?}",
+                            status.index, nominal_current_time, actual_current_time, over_time, under_time
+                        );
+
+                        status.actual_sleep_time = if let Some(time_diff) = over_time {
+                            status.actual_sleep_time.checked_sub(time_diff).expect(&format!("Cannot subtract negative over_time {:?} from sleep_time {:?}", time_diff, status.actual_sleep_time))
+                        } else if let Some(time_diff) = under_time {
+                            status.actual_sleep_time.checked_add(time_diff).expect(&format!("Cannot add negative over_time {:?} to sleep_time {:?}", time_diff, status.actual_sleep_time))
+                        } else {
+                            status.actual_sleep_time
+                        };
 
                         // Update the timings (only do this when we're actively sending colors to serial)
                         status.previous_time = status.current_time;
@@ -110,8 +131,8 @@ impl LedSystem {
                         state.current_sequence = None;
 
                         // reset to beginning of whatever sequence is next
+                        debug!("Stopped sequence, set index 0. Total time: {:?}", status.current_time - status.start_time);
                         status.reinitialize();
-                        debug!("Stopped sequence, set index 0");
 
                         // TODO: use LED_ACTIVE here to avoid spin-waiting
                     }
@@ -127,13 +148,9 @@ impl LedSystem {
                 break;
             }
 
-            let sleep_duration =
-                delay.checked_sub(status.total_error).unwrap_or_default();
-            trace!(
-                "Sleeping for {:?} (total error {:?})",
-                sleep_duration, status.total_error
-            );
-            std::thread::sleep(sleep_duration);
+            trace!("Sleeping for: {:?}", status.actual_sleep_time);
+            std::thread::sleep(status.actual_sleep_time);
+            status.actual_sleep_time = status.nominal_sleep_time;
             trace!("Time: {:?}", status.start_time.elapsed());
         }
     }

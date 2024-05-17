@@ -114,8 +114,10 @@ async fn set_sequence(payload: String) -> HttpResponse {
                 .expect("Unable to get final token in payload string for /api/set-sequence")
                 .parse::<f32>();
             if let Ok(duration) = duration_result {
+                debug!("Fading to black {}s", duration);
                 Ok(LedSequence::fade_to_black(&led_state.current_color, duration))
             } else {
+                debug!("Fading to black defaulted to 10s");
                 Ok(LedSequence::fade_to_black(&led_state.current_color, crate::led_sequence::FADE_DURATION))
             }
         } else {
