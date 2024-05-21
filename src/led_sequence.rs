@@ -81,7 +81,7 @@ impl LedSequence {
             let percent = i as f32 / (duration * RESOLUTION);
             // Adjust the next color's white value to fade quicker to black
             let mut next_color = start_color.lerp(&end_color, percent);
-            next_color.w = 1.0 - (start_color.w * percent).cbrt();
+            next_color.w = start_color.w - start_color.w * percent.cbrt();
             colors.push_back(next_color);
         }
 
