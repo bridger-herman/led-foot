@@ -115,9 +115,19 @@ impl LedSystem {
                         );
 
                         status.actual_sleep_time = if let Some(time_diff) = over_time {
-                            status.actual_sleep_time.checked_sub(time_diff).expect(&format!("Cannot subtract negative over_time {:?} from sleep_time {:?}", time_diff, status.actual_sleep_time))
+                            if let Some(time) = status.actual_sleep_time.checked_sub(time_diff) {
+                                time
+                            }  else {
+                                warn!("Cannot subtract negative over_time {:?} from sleep_time {:?}. Defaulting to {:?}", time_diff, status.actual_sleep_time, Duration::from_millis(0));
+                                Duration::from_millis(0)
+                            }
                         } else if let Some(time_diff) = under_time {
-                            status.actual_sleep_time.checked_add(time_diff).expect(&format!("Cannot add negative over_time {:?} to sleep_time {:?}", time_diff, status.actual_sleep_time))
+                            if let Some(time) = status.actual_sleep_time.checked_add(time_diff) {
+                                time
+                            }  else {
+                                warn!("Cannot add negative over_time {:?} to sleep_time {:?}. Defaulting to {:?}", time_diff, status.actual_sleep_time, Duration::from_millis(0));
+                                Duration::from_millis(0)
+                            }
                         } else {
                             status.actual_sleep_time
                         };
