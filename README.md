@@ -3,6 +3,8 @@ RGB+White LEDs controlled by an Arduino (Mega 2560), and a web server that integ
 
 Server is written in Rust, using the Actix framework.
 
+Check out the [hardware details](./README_HARDWARE.md) for a history and current hardware setup for the project.
+
 ## Installation
 
 0. Download and install dependencies:
@@ -57,9 +59,11 @@ sudo chmod a+rw /dev/ttyACM0
   3. Add the integration!
   4. Check the log if anything goes wrong.
 
----
 
-Everything below here is all deprecated now that we're just running this on a regular x86_64 server.
+## Cross-Compiling for Raspberry Pi Zero W
+
+The Raspberry Pi Zero W has a pretty atrocious processing speed, and thus the Rust compiler is excruciatingly slow (30+ minutes to compile this project last I checked). So, I prefer to cross compile on an x86-64 machine with significantly faster processor.
+
 
 ## Part 1: Set up cross compiler for the target
 
